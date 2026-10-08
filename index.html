@@ -1055,7 +1055,7 @@
       </div>
 
       <p class="stage-kicker hidden" id="pageKicker"></p>
-      <h1 id="pageTitle">Register</h1>
+      <h1 id="pageTitle" class="hidden"></h1>
       <p class="stage-lead hidden" id="pageLead"></p>
 
       <div class="steps hidden" id="stepsHelp"></div>
@@ -1069,7 +1069,7 @@
         </div>
       </div>
 
-      <div class="block" id="nickBlock">
+      <div class="block hidden" id="nickBlock">
         <p class="block-label">Nickname</p>
         <form class="nick-form" id="nickForm" novalidate autocomplete="off">
           <input id="nickInput" type="text" name="nickname" maxlength="24" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="nickname" inputmode="text">
@@ -2061,6 +2061,17 @@
         return;
       }
       if (routeId === PAGE_ID) {
+        const existing = readSessionRaw();
+        if (existing && existing.nick) {
+          try {
+            const acc = await loadUserIndex(existing.nick);
+            if (acc.map && acc.map.ok && acc.map.s === existing.sub) {
+              location.replace("?id=" + encodeURIComponent(existing.nick));
+              return { redirect: true };
+            }
+          } catch (_) {}
+          localStorage.removeItem(USER_KEY);
+        }
         document.getElementById("app").classList.add("is-register");
         show(uploadBlock, false);
         show(viewerBlock, false);
@@ -2072,18 +2083,8 @@
         show(authBlock, false);
         show(pageKicker, false);
         show(pageLead, false);
+        show(pageTitle, true);
         setPageCopy("", "Register", "");
-        const existing = readSessionRaw();
-        if (existing && existing.nick) {
-          try {
-            const acc = await loadUserIndex(existing.nick);
-            if (acc.map && acc.map.ok && acc.map.s === existing.sub) {
-              location.replace("?id=" + encodeURIComponent(existing.nick));
-              return;
-            }
-          } catch (_) {}
-          localStorage.removeItem(USER_KEY);
-        }
         initGoogle();
         setStatus("", "");
         nickInput.focus();
@@ -2155,7 +2156,8 @@
       show(authBlock, false);
       show(linkBlock, false);
       show(document.getElementById("navRow"), false);
-      setPageCopy("Cabinet", "@" + routeId, "");
+      show(pageTitle, true);
+      setPageCopy("", "@" + routeId, "");
       show(pageLead, false);
       galleryTitle.textContent = "";
       show(galleryTitle, false);
@@ -2191,12 +2193,25 @@
 
     if (!id) {
       landing.classList.remove("hidden");
-      document.getElementById("launchBtn").addEventListener("click", function () {
+      document.getElementById("launchBtn").addEventListener("click", async function () {
+        const existing = readSessionRaw();
+        if (existing && existing.nick && existing.sub) {
+          try {
+            const acc = await loadUserIndex(existing.nick);
+            if (acc.map && acc.map.ok && acc.map.s === existing.sub) {
+              location.href = "?id=" + encodeURIComponent(existing.nick);
+              return;
+            }
+          } catch (_) {}
+        }
         location.href = "?id=" + PAGE_ID;
       });
     } else {
-      app.classList.remove("hidden");
-      openById(id).catch(function (err) {
+      openById(id).then(function (result) {
+        if (result && result.redirect) return;
+        app.classList.remove("hidden");
+      }).catch(function (err) {
+        app.classList.remove("hidden");
         setStatus(err.message || String(err), "err");
       });
     }
