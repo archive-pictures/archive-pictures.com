@@ -355,9 +355,7 @@
     const SESSION_MS = 24 * 60 * 60 * 1000;
     const PAGE_ID = "addimages";
     const GOOGLE_CLIENT_ID = "473688037639-2hvoaad0h1is8pi2rn0akeqbhgutb3j5.apps.googleusercontent.com";
-    const GH_TOKEN = "";
-    const GH_OWNER = "archive-pictures";
-    const GH_REPO = "archive-pictures.github.io";
+    const API_BASE = "https://yellow-cloud-62cc.archivepictures-support.workers.dev";
 
     const landing = document.getElementById("landing");
     const app = document.getElementById("app");
@@ -457,23 +455,8 @@
       });
     }
 
-    function ghHeaders() {
-      if (!GH_TOKEN) throw new Error("GitHub token is not configured");
-      return {
-        "Accept": "application/vnd.github+json",
-        "Authorization": "Bearer " + GH_TOKEN,
-        "X-GitHub-Api-Version": "2022-11-28"
-      };
-    }
-
-    function ghContentsUrl(path) {
-      return "https://api.github.com/repos/" +
-        encodeURIComponent(GH_OWNER) + "/" + encodeURIComponent(GH_REPO) +
-        "/contents/" + path.split("/").map(encodeURIComponent).join("/");
-    }
-
     async function getGitHub(path) {
-      const res = await fetch(ghContentsUrl(path), { headers: ghHeaders() });
+      const res = await fetch(API_BASE + "/contents?path=" + encodeURIComponent(path));
       if (res.status === 404) return null;
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || ("HTTP " + res.status));
@@ -481,11 +464,11 @@
     }
 
     async function putGitHub(path, contentBase64, message, sha) {
-      const body = { message: message, content: contentBase64 };
+      const body = { path: path, content: contentBase64, message: message };
       if (sha) body.sha = sha;
-      const res = await fetch(ghContentsUrl(path), {
+      const res = await fetch(API_BASE + "/contents", {
         method: "PUT",
-        headers: Object.assign({ "Content-Type": "application/json" }, ghHeaders()),
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body)
       });
       const data = await res.json().catch(() => ({}));
@@ -548,7 +531,7 @@
       const data = await putGitHub(path, content, "Add image " + file.name + " [" + id + "]");
       return {
         name: file.name,
-        url: (data.content && data.content.html_url) || path
+        url: data.html_url || (data.content && data.content.html_url) || path
       };
     }
 
@@ -636,10 +619,6 @@
         e.preventDefault();
         if (!googleUser) {
           setStatus("Sign in with Google first.", "err");
-          return;
-        }
-        if (!GH_TOKEN) {
-          setStatus("GitHub token is not configured.", "err");
           return;
         }
         filesEl.click();
