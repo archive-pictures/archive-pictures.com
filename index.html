@@ -267,8 +267,10 @@
       font-weight: 800;
       font-size: clamp(2rem, 6vw, 2.6rem);
       letter-spacing: -0.03em;
-      line-height: 1.1;
+      line-height: 1.3;
+      padding-bottom: 0.12em;
       margin-bottom: 12px;
+      overflow: visible;
       overflow-wrap: anywhere;
     }
 
@@ -545,19 +547,22 @@
       display: flex;
       flex-direction: column;
       gap: 14px;
+      width: 100%;
+      max-width: 280px;
     }
 
     .nick-form input {
       width: 100%;
-      min-height: 58px;
-      padding: 0 18px;
+      min-height: 52px;
+      padding: 0 16px;
       border: 1.5px solid var(--line);
-      border-radius: 16px;
+      border-radius: 14px;
       font: inherit;
-      font-size: 1.2rem;
-      font-weight: 700;
+      font-size: 1.05rem;
+      font-weight: 600;
       background: #fff;
       color: var(--ink);
+      text-align: center;
     }
 
     .nick-form input:focus {
@@ -566,9 +571,46 @@
     }
 
     .nick-form .btn {
-      min-height: 58px;
-      font-size: 1.1rem;
+      min-height: 52px;
+      font-size: 1.05rem;
       width: 100%;
+    }
+
+    .shell.is-register .stage {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .shell.is-register .nav-row {
+      justify-content: center;
+      width: 100%;
+    }
+
+    .shell.is-register #pageTitle {
+      width: 100%;
+      text-align: center;
+    }
+
+    .shell.is-register #nickBlock {
+      width: min(280px, 100%);
+      margin-left: auto;
+      margin-right: auto;
+      text-align: center;
+    }
+
+    .shell.is-register .block-label {
+      text-align: center;
+    }
+
+    .shell.is-register .nick-form {
+      margin: 0 auto;
+    }
+
+    .shell.is-register #status {
+      width: min(280px, 100%);
+      text-align: center;
     }
 
     #googleBtn {
@@ -944,7 +986,7 @@
     <main class="stage">
       <div class="nav-row" id="navRow">
         <a class="btn btn-ghost" href="?id=pictures">All pictures</a>
-        <a class="btn btn-ghost" href="?id=addimages" id="navCabinet">My cabinet</a>
+        <a class="btn btn-ghost" href="?id=register" id="navCabinet">My cabinet</a>
       </div>
 
       <p class="stage-kicker hidden" id="pageKicker"></p>
@@ -1018,9 +1060,9 @@
     const MAX_BYTES = 40 * 1024 * 1024;
     const USER_KEY = "archive-pictures-google";
     const SESSION_MS = 24 * 60 * 60 * 1000;
-    const PAGE_ID = "addimages";
+    const PAGE_ID = "register";
     const PICTURES_ID = "pictures";
-    const RESERVED = { addimages: 1, pictures: 1 };
+    const RESERVED = { register: 1, addimages: 1, pictures: 1 };
     const GOOGLE_CLIENT_ID = "473688037639-2hvoaad0h1is8pi2rn0akeqbhgutb3j5.apps.googleusercontent.com";
     const API_BASE = "https://yellow-cloud-62cc.archivepictures-support.workers.dev";
     const USERS_JSON = "users/index.json";
@@ -1854,7 +1896,12 @@
     }
 
     async function openById(routeId) {
+      if (routeId === "addimages") {
+        location.replace("?id=" + PAGE_ID);
+        return;
+      }
       if (routeId === PAGE_ID) {
+        document.getElementById("app").classList.add("is-register");
         show(uploadBlock, false);
         show(viewerBlock, false);
         show(galleryWrap, false);
