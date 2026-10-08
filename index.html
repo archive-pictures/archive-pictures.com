@@ -629,13 +629,107 @@
       color: inherit;
     }
 
-    .shot-thumb {
+    .shot-media {
+      position: relative;
       aspect-ratio: 1;
       width: 100%;
-      object-fit: cover;
       border-radius: 12px;
       background: #e8eef7;
+      overflow: hidden;
+    }
+
+    .shot-thumb {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
       display: block;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
+
+    .shot-media.is-loaded .shot-thumb {
+      opacity: 1;
+    }
+
+    .shot-loader {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: #e8eef7;
+      pointer-events: none;
+    }
+
+    .shot-media.is-loaded .shot-loader {
+      display: none;
+    }
+
+    .shot-spinner {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 3px solid rgba(43, 110, 240, 0.2);
+      border-top-color: var(--blue);
+      animation: spin 0.8s linear infinite;
+    }
+
+    .shot-wait {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--muted);
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+
+    .shot-media:hover .shot-wait {
+      opacity: 1;
+    }
+
+    .shot-wait::after {
+      content: "Wait";
+    }
+
+    @media (hover: none) {
+      .shot-wait {
+        opacity: 1;
+      }
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .viewer-media {
+      position: relative;
+      width: 100%;
+      min-height: 220px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid var(--line);
+      overflow: hidden;
+    }
+
+    .viewer-media img {
+      width: 100%;
+      max-height: 70dvh;
+      object-fit: contain;
+      display: block;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+      border: none;
+      border-radius: 0;
+      background: transparent;
+    }
+
+    .viewer-media.is-loaded img {
+      opacity: 1;
+    }
+
+    .viewer-media .shot-loader {
+      background: rgba(232, 238, 247, 0.95);
     }
 
     .shot-meta {
@@ -676,15 +770,6 @@
       display: flex;
       flex-direction: column;
       gap: 14px;
-    }
-
-    .viewer img {
-      width: 100%;
-      max-height: 70dvh;
-      object-fit: contain;
-      border-radius: 18px;
-      background: rgba(255, 255, 255, 0.7);
-      border: 1px solid var(--line);
     }
 
     .search-box {
@@ -839,7 +924,13 @@
 
       <div class="block hidden" id="viewerBlock">
         <div class="viewer">
-          <img id="viewerImg" alt="">
+          <div class="viewer-media" id="viewerMedia" title="Wait">
+            <div class="shot-loader">
+              <div class="shot-spinner" aria-hidden="true"></div>
+              <span class="shot-wait"></span>
+            </div>
+            <img id="viewerImg" alt="">
+          </div>
           <p class="shot-name" id="viewerName"></p>
           <p class="shot-user" id="viewerUser"></p>
         </div>
@@ -905,6 +996,7 @@
     const searchBox = document.getElementById("searchBox");
     const searchInput = document.getElementById("searchInput");
     const viewerImg = document.getElementById("viewerImg");
+    const viewerMedia = document.getElementById("viewerMedia");
     const viewerName = document.getElementById("viewerName");
     const viewerUser = document.getElementById("viewerUser");
     const navCabinet = document.getElementById("navCabinet");
@@ -931,6 +1023,32 @@
 
     function fileUrl(path) {
       return location.origin + "/" + String(path || "").replace(/^\/+/, "");
+    }
+
+    function rawFileUrl(path) {
+      return "https://raw.githubusercontent.com/archive-pictures/archive-pictures.com/main/" +
+        String(path || "").replace(/^\/+/, "");
+    }
+
+    function bindImageLoader(img, media, path) {
+      if (!img || !media || !path) return;
+      media.classList.remove("is-loaded");
+      media.setAttribute("title", "Wait");
+      let triedRaw = false;
+      function markLoaded() {
+        media.classList.add("is-loaded");
+      }
+      img.onload = markLoaded;
+      img.onerror = function () {
+        if (!triedRaw) {
+          triedRaw = true;
+          img.src = rawFileUrl(path);
+          return;
+        }
+        media.classList.add("is-loaded");
+      };
+      img.src = fileUrl(path);
+      if (img.complete && img.naturalWidth > 0) markLoaded();
     }
 
     function safeName(name) {
@@ -1097,16 +1215,16 @@
           all[key] = map[key];
         });
       }
-      const legacy = await getGitHub("images.json");
-      if (legacy && legacy.content) {
-        try {
+      try {
+        const legacy = await getGitHub("images.json");
+        if (legacy && legacy.content) {
           const text = base64ToText(String(legacy.content).replace(/\n/g, ""));
           const map = JSON.parse(text) || {};
           Object.keys(map).forEach(function (key) {
             if (!all[key]) all[key] = map[key];
           });
-        } catch (_) {}
-      }
+        }
+      } catch (_) {}
       return all;
     }
 
@@ -1302,14 +1420,22 @@
         const imageId = row.id;
         const card = document.createElement("div");
         card.className = "shot";
+        const media = document.createElement("div");
+        media.className = "shot-media";
+        media.title = "Wait";
+        const loader = document.createElement("div");
+        loader.className = "shot-loader";
+        loader.innerHTML = "<div class=\"shot-spinner\" aria-hidden=\"true\"></div><span class=\"shot-wait\"></span>";
         const img = document.createElement("img");
         img.className = "shot-thumb";
-        img.src = fileUrl(item.p);
         img.alt = item.n || imageId;
         img.loading = "lazy";
-        img.addEventListener("click", function () {
+        media.addEventListener("click", function () {
           location.href = "?id=" + encodeURIComponent(imageId);
         });
+        media.appendChild(loader);
+        media.appendChild(img);
+        bindImageLoader(img, media, item.p);
         const meta = document.createElement("div");
         meta.className = "shot-meta";
         const name = document.createElement("div");
@@ -1341,7 +1467,7 @@
         meta.appendChild(name);
         if (!opts || !opts.hideUser) meta.appendChild(user);
         meta.appendChild(actions);
-        card.appendChild(img);
+        card.appendChild(media);
         card.appendChild(meta);
         gallery.appendChild(card);
       });
@@ -1388,8 +1514,8 @@
         setStatus("Picture not found.", "err");
         return false;
       }
-      viewerImg.src = fileUrl(item.p);
       viewerImg.alt = item.n || imageId;
+      bindImageLoader(viewerImg, viewerMedia, item.p);
       viewerName.textContent = item.n || imageId;
       viewerUser.textContent = "@" + item.u + " · " + publicLink(imageId);
       show(viewerBlock, true);

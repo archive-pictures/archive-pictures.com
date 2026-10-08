@@ -1,1 +1,1 @@
-window.ARCHIVE_PICTURES_TAGS={"tags":{"android":["android-chrome-512x512"],"chrome":["android-chrome-512x512"],"512x512":["android-chrome-512x512"],"android-chrome-512x512":["android-chrome-512x512"]},"images":{"android-chrome-512x512":{"n":"android-chrome-512x512.png","u":"arhiv","p":"users/arhiv/android-chrome-512x512.png","g":["android","chrome","512x512","android-chrome-512x512"]}}};
+window.ARCHIVE_PICTURES_TAGS={"tags":{},"images":{}};
