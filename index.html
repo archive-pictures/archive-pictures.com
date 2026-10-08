@@ -853,6 +853,24 @@
       display: none;
     }
 
+    .shell.is-view .nav-row,
+    .shell.is-view .stage-kicker,
+    .shell.is-view #pageTitle,
+    .shell.is-view .stage-lead,
+    .shell.is-view #status,
+    .shell.is-view #galleryTitle {
+      display: none !important;
+    }
+
+    .shell.is-view .viewer-media {
+      max-width: min(920px, 100%);
+      margin: 0 auto;
+    }
+
+    .shell.is-view .shot-user {
+      display: none;
+    }
+
     .search-box input:focus {
       outline: 2px solid #b9ceff;
       border-color: var(--blue);
@@ -1475,7 +1493,9 @@
       };
       await saveImageRecord(imageId, record);
       all[imageId] = record;
-      await mergeSiteTags(tags);
+      try {
+        await mergeSiteTags(tags);
+      } catch (_) {}
       return { id: imageId, name: file.name, path: path, link: rawFileUrl(path) };
     }
 
@@ -1555,7 +1575,7 @@
         const card = document.createElement("button");
         card.type = "button";
         card.className = "shot";
-        card.title = (item.n || imageId) + " — open in cabinet";
+        card.title = item.n || imageId;
         const media = document.createElement("div");
         media.className = "shot-media";
         const loader = document.createElement("div");
@@ -1583,7 +1603,7 @@
         card.appendChild(media);
         card.appendChild(meta);
         card.addEventListener("click", function () {
-          location.href = cabinetLinkForImage(item, imageId);
+          location.href = "?id=" + encodeURIComponent(imageId);
         });
         card.addEventListener("contextmenu", async function (e) {
           e.preventDefault();
@@ -1859,53 +1879,67 @@
       }
 
       const images = await loadAllImagesMap();
+      const openImg = params.get("img");
+      if (openImg && images[openImg] && images[openImg].p) {
+        location.replace("?id=" + encodeURIComponent(openImg));
+        return;
+      }
+
       if (images[routeId] && images[routeId].p) {
+        document.getElementById("app").classList.add("is-view");
         show(uploadBlock, false);
         show(authBlock, false);
         show(nickBlock, false);
         show(stepsHelp, false);
         show(galleryWrap, false);
         show(searchBox, false);
+        show(document.getElementById("navRow"), false);
+        show(pageKicker, false);
+        show(pageTitle, false);
+        show(pageLead, false);
+        setStatus("", "");
         const session = readSessionRaw();
         if (session) {
-          setSignedIn(session, false);
-          show(authBlock, true);
-          document.getElementById("googleBtn").classList.add("hidden");
+          googleUser = session;
+          show(signOutBtn, true);
+          navCabinet.href = "?id=" + encodeURIComponent(session.nick);
+        } else {
+          show(signOutBtn, false);
         }
         await showImagePage(routeId);
+        viewerUser.textContent = "";
         return;
       }
 
       show(viewerBlock, false);
       show(nickBlock, false);
       show(stepsHelp, false);
-      show(linkBlock, true);
-      linkLabel.textContent = "Cabinet link";
-      setShareLink(publicLink(routeId));
-      setPageCopy("Cabinet", "@" + routeId, "Shortcuts open pictures here in the cabinet.");
-      galleryTitle.textContent = "Picture shortcuts";
+      show(authBlock, false);
+      show(linkBlock, false);
+      show(document.getElementById("navRow"), false);
+      setPageCopy("Cabinet", "@" + routeId, "");
+      show(pageLead, false);
+      galleryTitle.textContent = "";
+      show(galleryTitle, false);
       const session = readSessionRaw();
       const isOwner = session && session.nick === routeId;
       if (isOwner) {
         setSignedIn(session, false);
+        show(userChip, false);
+        folderLine.textContent = "";
         show(uploadBlock, true);
-        show(authBlock, true);
+        show(authBlock, false);
+        show(signOutBtn, true);
         document.getElementById("googleBtn").classList.add("hidden");
-        setStatus("Signed in · session 24h", "ok");
+        setStatus("", "");
       } else {
         show(uploadBlock, false);
-        show(authBlock, true);
-        document.getElementById("googleBtn").innerHTML =
-          "<a class=\"btn\" href=\"?id=" + PAGE_ID + "\">Sign in to upload</a>";
-        setStatus("Public cabinet @" + routeId, "ok");
+        show(authBlock, false);
+        show(signOutBtn, false);
+        setStatus("", "");
       }
       await loadAndRenderGallery(routeId);
-      const openImg = params.get("img");
-      if (openImg && images[openImg] && images[openImg].u === routeId) {
-        await showImagePage(openImg);
-        show(galleryWrap, true);
-        setStatus("Opened in cabinet: " + (images[openImg].n || openImg), "ok");
-      }
+      show(searchBox, false);
     }
 
     if (searchInput) {
