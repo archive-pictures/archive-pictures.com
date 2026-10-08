@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Archive Pictures</title>
+  <link rel="canonical" href="https://archive-pictures.com/">
+  <meta name="description" content="All your images are here.">
+  <meta name="theme-color" content="#2f6fed">
+
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" type="image/png" sizes="16x16" href="logo/favicon-16x16.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="logo/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="48x48" href="logo/favicon-48x48.png">
+  <link rel="icon" type="image/png" sizes="96x96" href="logo/favicon-96x96.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="logo/favicon-192x192.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="logo/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="msapplication-TileImage" content="logo/mstile-150x150.png">
+  <meta name="msapplication-TileColor" content="#2f6fed">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://archive-pictures.com/">
+  <meta property="og:title" content="Archive Pictures">
+  <meta property="og:description" content="All your images are here.">
+  <meta property="og:image" content="https://archive-pictures.com/logo/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Archive Pictures">
+  <meta name="twitter:description" content="All your images are here.">
+  <meta name="twitter:image" content="https://archive-pictures.com/logo/og-image.png">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Archive Pictures",
+    "url": "https://archive-pictures.com/",
+    "description": "All your images are here.",
+    "image": "https://archive-pictures.com/logo/logo-1200.png",
+    "publisher": {
+      "@type": "Organization",
+      "name": "Archive Pictures",
+      "url": "https://archive-pictures.com/",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://archive-pictures.com/logo/google-touch-icon.png",
+        "width": 512,
+        "height": 512
+      }
+    }
+  }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --blue: #2f6fed;
+      --blue-dark: #1e4fbf;
+      --ink: #1a2332;
+      --muted: #5a6a7e;
+      --line: #d8e0ea;
+      --bg: #f7f9fc;
+      --card: #ffffff;
+      --ok: #1a7f4b;
+      --err: #c0392b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "DM Sans", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -10%, #d6e4ff 0%, transparent 55%),
+        var(--bg);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    .wrap {
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 48px 20px 64px;
+      text-align: center;
+    }
+
+    .logo {
+      width: min(280px, 70vw);
+      height: auto;
+      margin-bottom: 20px;
+    }
+
+    .tagline {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 28px;
+    }
+
+    .btn {
+      display: inline-block;
+      border: none;
+      border-radius: 10px;
+      padding: 12px 28px;
+      font: inherit;
+      font-weight: 700;
+      font-size: 1rem;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      text-decoration: none;
+      color: #fff;
+      background: var(--blue);
+      transition: background 0.15s ease, transform 0.15s ease;
+    }
+
+    .btn:hover { background: var(--blue-dark); }
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--blue);
+      border: 1.5px solid var(--blue);
+    }
+
+    .btn-secondary:hover { background: #eef3ff; }
+
+    .panel {
+      text-align: left;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 22px;
+      margin-top: 8px;
+    }
+
+    .panel h1 {
+      font-size: 1.25rem;
+      margin-bottom: 4px;
+    }
+
+    .id-line {
+      font-size: 0.9rem;
+      color: var(--muted);
+      margin-bottom: 18px;
+      word-break: break-all;
+    }
+
+    label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin: 14px 0 6px;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      font: inherit;
+      font-size: 0.95rem;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    input:focus {
+      outline: 2px solid #b9ceff;
+      border-color: var(--blue);
+    }
+
+    .hint {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+    .hint a {
+      color: var(--blue);
+      word-break: break-all;
+    }
+
+    .drop {
+      margin-top: 18px;
+      border: 1.5px dashed var(--line);
+      border-radius: 12px;
+      padding: 28px 16px;
+      text-align: center;
+      background: #fafbfd;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .drop.dragover {
+      border-color: var(--blue);
+      background: #eef3ff;
+    }
+
+    .drop p {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 12px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .status {
+      margin-top: 14px;
+      font-size: 0.9rem;
+      min-height: 1.4em;
+    }
+
+    .status.ok { color: var(--ok); }
+    .status.err { color: var(--err); }
+
+    .list {
+      margin-top: 16px;
+      list-style: none;
+    }
+
+    .list li {
+      font-size: 0.85rem;
+      padding: 8px 0;
+      border-top: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      color: var(--muted);
+    }
+
+    .list a { color: var(--blue); }
+
+    .back {
+      display: inline-block;
+      margin-bottom: 18px;
+      font-size: 0.9rem;
+      color: var(--muted);
+      text-decoration: none;
+    }
+
+    .back:hover { color: var(--blue); }
+
+    .hidden { display: none; }
+
+    .auth-box {
+      margin: 18px 0 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .user-line {
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .user-line strong { color: var(--ink); }
+
+    .folder-line {
+      font-size: 0.82rem;
+      color: var(--muted);
+      word-break: break-all;
+    }
+
+    .add-bar {
+      margin-top: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    a.add-image {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: var(--blue);
+      color: #fff;
+      font-size: 1.75rem;
+      font-weight: 700;
+      line-height: 1;
+      text-decoration: none;
+      transition: background 0.15s ease, transform 0.15s ease;
+    }
+
+    a.add-image:hover { background: var(--blue-dark); }
+    a.add-image:active { transform: scale(0.96); }
+
+    a.add-image.is-disabled {
+      opacity: 0.45;
+      pointer-events: none;
+    }
+
+    .add-caption {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+  </style>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+  <div id="landing" class="wrap hidden">
+    <img class="logo" src="logo/archive-pictures.png" alt="Archive Pictures">
+    <p class="tagline">All your images are here.</p>
+    <button type="button" class="btn" id="launchBtn">Launch</button>
+  </div>
+
+  <div id="app" class="wrap hidden">
+    <a class="back" href="./">← Archive Pictures</a>
+    <div class="panel">
+      <h1>Launch page</h1>
+      <p class="id-line">Session ID: <span id="sessionId"></span></p>
+
+      <div class="auth-box">
+        <div id="googleBtn"></div>
+        <p class="user-line hidden" id="userLine">Signed in as <strong id="userName"></strong></p>
+        <p class="folder-line hidden" id="folderLine"></p>
+        <button type="button" class="btn btn-secondary hidden" id="signOutBtn">Sign out</button>
+      </div>
+
+      <div class="add-bar">
+        <a id="add-image" class="add-image is-disabled" href="#add-image" title="Add image" aria-label="Add image">+</a>
+        <span class="add-caption">Add image</span>
+      </div>
+      <input type="file" id="files" accept="image/*" multiple hidden>
+
+      <p class="status" id="status"></p>
+      <ul class="list" id="list"></ul>
+    </div>
+  </div>
+
+  <script>
+    const MAX_BYTES = 40 * 1024 * 1024;
+    const USER_KEY = "archive-pictures-google";
+    const SESSION_MS = 24 * 60 * 60 * 1000;
+    const PAGE_ID = "addimages";
+    const GOOGLE_CLIENT_ID = "473688037639-2hvoaad0h1is8pi2rn0akeqbhgutb3j5.apps.googleusercontent.com";
+    const GH_TOKEN = "";
+    const GH_OWNER = "archive-pictures";
+    const GH_REPO = "archive-pictures.github.io";
+
+    const landing = document.getElementById("landing");
+    const app = document.getElementById("app");
+    const params = new URLSearchParams(location.search);
+    const id = params.get("id");
+
+    const filesEl = document.getElementById("files");
+    const addImage = document.getElementById("add-image");
+    const statusEl = document.getElementById("status");
+    const listEl = document.getElementById("list");
+    const userLine = document.getElementById("userLine");
+    const userName = document.getElementById("userName");
+    const folderLine = document.getElementById("folderLine");
+    const signOutBtn = document.getElementById("signOutBtn");
+
+    let googleUser = null;
+
+    function setStatus(msg, kind) {
+      statusEl.textContent = msg || "";
+      statusEl.className = "status" + (kind ? " " + kind : "");
+    }
+
+    const USERS_JSON = "users.json";
+
+    function safeName(name) {
+      return name.replace(/[^\w.\-()+ ]+/g, "_").replace(/\s+/g, "-");
+    }
+
+    function nickFromUser(user) {
+      const fromEmail = (user.email || "").split("@")[0] || "";
+      const fromName = (user.name || "").trim().split(/\s+/)[0] || "";
+      const raw = fromEmail || fromName || ("u" + String(user.sub || "").slice(-6));
+      return raw.toLowerCase().replace(/[^a-z0-9._-]+/g, "").replace(/^[^a-z0-9]+|[^a-z0-9]+$/g, "") || "user";
+    }
+
+    function userFolderPath(user) {
+      return "users/" + user.nick;
+    }
+
+    function saveSession(user) {
+      localStorage.setItem(USER_KEY, JSON.stringify({
+        id: id,
+        nick: user.nick,
+        sub: user.sub,
+        email: user.email || "",
+        name: user.name || "",
+        exp: Date.now() + SESSION_MS
+      }));
+    }
+
+    function loadSession() {
+      try {
+        const raw = localStorage.getItem(USER_KEY);
+        if (!raw) return null;
+        const s = JSON.parse(raw);
+        if (!s || s.id !== id || !s.nick || !s.sub || !s.exp || Date.now() > s.exp) {
+          localStorage.removeItem(USER_KEY);
+          return null;
+        }
+        return s;
+      } catch (_) {
+        localStorage.removeItem(USER_KEY);
+        return null;
+      }
+    }
+
+    function parseJwt(token) {
+      const part = token.split(".")[1];
+      const json = atob(part.replace(/-/g, "+").replace(/_/g, "/"));
+      return JSON.parse(json);
+    }
+
+    function textToBase64(text) {
+      const bytes = new TextEncoder().encode(text);
+      let bin = "";
+      for (const b of bytes) bin += String.fromCharCode(b);
+      return btoa(bin);
+    }
+
+    function base64ToText(b64) {
+      const bin = atob(b64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return new TextDecoder().decode(bytes);
+    }
+
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = String(reader.result || "");
+          const base64 = result.includes(",") ? result.split(",")[1] : result;
+          resolve(base64);
+        };
+        reader.onerror = () => reject(reader.error || new Error("read failed"));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function ghHeaders() {
+      if (!GH_TOKEN) throw new Error("GitHub token is not configured");
+      return {
+        "Accept": "application/vnd.github+json",
+        "Authorization": "Bearer " + GH_TOKEN,
+        "X-GitHub-Api-Version": "2022-11-28"
+      };
+    }
+
+    function ghContentsUrl(path) {
+      return "https://api.github.com/repos/" +
+        encodeURIComponent(GH_OWNER) + "/" + encodeURIComponent(GH_REPO) +
+        "/contents/" + path.split("/").map(encodeURIComponent).join("/");
+    }
+
+    async function getGitHub(path) {
+      const res = await fetch(ghContentsUrl(path), { headers: ghHeaders() });
+      if (res.status === 404) return null;
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || ("HTTP " + res.status));
+      return data;
+    }
+
+    async function putGitHub(path, contentBase64, message, sha) {
+      const body = { message: message, content: contentBase64 };
+      if (sha) body.sha = sha;
+      const res = await fetch(ghContentsUrl(path), {
+        method: "PUT",
+        headers: Object.assign({ "Content-Type": "application/json" }, ghHeaders()),
+        body: JSON.stringify(body)
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || ("HTTP " + res.status));
+      return data;
+    }
+
+    async function loadUsersMap() {
+      const file = await getGitHub(USERS_JSON);
+      if (!file || !file.content) return { map: {}, sha: null };
+      const text = base64ToText(String(file.content).replace(/\n/g, ""));
+      let map = {};
+      try { map = JSON.parse(text) || {}; } catch (_) { map = {}; }
+      if (Array.isArray(map) || typeof map !== "object") map = {};
+      return { map: map, sha: file.sha || null };
+    }
+
+    async function saveUsersMap(map, sha) {
+      const compact = JSON.stringify(map);
+      return putGitHub(USERS_JSON, textToBase64(compact), "Update users.json", sha || undefined);
+    }
+
+    async function registerUser(user) {
+      const { map, sha } = await loadUsersMap();
+      let nick = nickFromUser(user);
+      for (const key of Object.keys(map)) {
+        if (map[key] && map[key].s === user.sub) {
+          nick = key;
+          break;
+        }
+      }
+      if (map[nick] && map[nick].s !== user.sub) {
+        const base = nick;
+        let n = 2;
+        while (map[nick] && map[nick].s !== user.sub) {
+          nick = base + n;
+          n += 1;
+        }
+      }
+      map[nick] = { i: PAGE_ID, s: user.sub, e: user.email || "", n: user.name || nick };
+      await saveUsersMap(map, sha);
+      user.nick = nick;
+      user.id = PAGE_ID;
+      return user;
+    }
+
+    async function ensureUserFolder(user) {
+      const folder = userFolderPath(user);
+      const keepPath = folder + "/.keep";
+      const check = await getGitHub(keepPath);
+      if (check) return folder;
+      await putGitHub(keepPath, textToBase64("."), "Create folder " + user.nick);
+      return folder;
+    }
+
+    async function uploadFile(file, user) {
+      const folder = userFolderPath(user);
+      const path = folder + "/" + id + "/" + Date.now() + "-" + safeName(file.name);
+      const content = await fileToBase64(file);
+      const data = await putGitHub(path, content, "Add image " + file.name + " [" + id + "]");
+      return {
+        name: file.name,
+        url: (data.content && data.content.html_url) || path
+      };
+    }
+
+    function setSignedIn(user, persist) {
+      googleUser = user;
+      if (persist !== false) saveSession(user);
+      userName.textContent = "@" + user.nick + " · ?id=" + id;
+      userLine.classList.remove("hidden");
+      folderLine.textContent = "Folder: " + userFolderPath(user) + "/";
+      folderLine.classList.remove("hidden");
+      signOutBtn.classList.remove("hidden");
+      addImage.classList.remove("is-disabled");
+      document.getElementById("googleBtn").classList.add("hidden");
+    }
+
+    function setSignedOut() {
+      googleUser = null;
+      localStorage.removeItem(USER_KEY);
+      userLine.classList.add("hidden");
+      folderLine.classList.add("hidden");
+      signOutBtn.classList.add("hidden");
+      addImage.classList.add("is-disabled");
+      document.getElementById("googleBtn").classList.remove("hidden");
+    }
+
+    async function onGoogleCredential(response) {
+      try {
+        const payload = parseJwt(response.credential);
+        let user = {
+          sub: payload.sub,
+          email: payload.email || "",
+          name: payload.name || ""
+        };
+        setStatus("Registering user…");
+        user = await registerUser(user);
+        setStatus("Creating folder…");
+        await ensureUserFolder(user);
+        setSignedIn(user);
+        setStatus("Signed in as @" + user.nick + " (?id=" + PAGE_ID + ", 24h)", "ok");
+      } catch (err) {
+        setSignedOut();
+        setStatus("Google sign-in failed: " + (err.message || err), "err");
+      }
+    }
+
+    function initGoogle() {
+      if (!GOOGLE_CLIENT_ID) {
+        setStatus("Set GOOGLE_CLIENT_ID in index.html to enable Google sign-in.", "err");
+        return;
+      }
+      if (!window.google || !google.accounts || !google.accounts.id) {
+        setTimeout(initGoogle, 200);
+        return;
+      }
+      google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: onGoogleCredential,
+        auto_select: false
+      });
+      google.accounts.id.renderButton(document.getElementById("googleBtn"), {
+        theme: "outline",
+        size: "large",
+        text: "signin_with",
+        shape: "rectangular"
+      });
+    }
+
+    if (!id) {
+      landing.classList.remove("hidden");
+      document.getElementById("launchBtn").addEventListener("click", () => {
+        location.href = "?id=" + PAGE_ID;
+      });
+    } else if (id !== PAGE_ID) {
+      location.replace("?id=" + PAGE_ID);
+    } else {
+      app.classList.remove("hidden");
+      document.getElementById("sessionId").textContent = PAGE_ID;
+
+      const session = loadSession();
+      if (session) setSignedIn(session, false);
+
+      initGoogle();
+
+      addImage.addEventListener("click", (e) => {
+        e.preventDefault();
+        if (!googleUser) {
+          setStatus("Sign in with Google first.", "err");
+          return;
+        }
+        if (!GH_TOKEN) {
+          setStatus("GitHub token is not configured.", "err");
+          return;
+        }
+        filesEl.click();
+      });
+
+      filesEl.addEventListener("change", async () => {
+        const list = Array.from(filesEl.files || []);
+        filesEl.value = "";
+        if (!list.length || !googleUser) return;
+
+        for (const file of list) {
+          if (!file.type.startsWith("image/")) {
+            setStatus("Skipped non-image: " + file.name, "err");
+            continue;
+          }
+          if (file.size > MAX_BYTES) {
+            setStatus("Too large (max 40 MB): " + file.name, "err");
+            continue;
+          }
+          try {
+            setStatus("Uploading " + file.name + "…");
+            const result = await uploadFile(file, googleUser);
+            const li = document.createElement("li");
+            li.innerHTML = "<span>" + result.name + "</span><a href=\"" + result.url + "\" target=\"_blank\" rel=\"noopener\">View on GitHub</a>";
+            listEl.prepend(li);
+            setStatus("Uploaded: " + file.name, "ok");
+          } catch (err) {
+            setStatus("Failed: " + file.name + " — " + (err.message || err), "err");
+            return;
+          }
+        }
+      });
+
+      signOutBtn.addEventListener("click", () => {
+        setSignedOut();
+        if (window.google && google.accounts && google.accounts.id) {
+          google.accounts.id.disableAutoSelect();
+        }
+        setStatus("Signed out.");
+        initGoogle();
+      });
+    }
+  </script>
+</body>
+</html>
+
