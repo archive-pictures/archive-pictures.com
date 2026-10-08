@@ -133,6 +133,12 @@
       animation: rise 0.7s ease both;
     }
 
+    .hero-brand a {
+      display: inline-block;
+      text-decoration: none;
+      color: inherit;
+    }
+
     .hero-logo {
       width: min(300px, 78vw);
       height: auto;
@@ -194,17 +200,22 @@
       background: transparent;
       color: var(--blue);
       border: 1.5px solid rgba(43, 110, 240, 0.35);
-      min-height: 44px;
-      font-size: 0.95rem;
-      padding: 0 18px;
+      min-height: 48px;
+      font-size: 1rem;
+      padding: 0 20px;
+    }
+
+    .nav-row .btn {
+      min-height: 48px;
+      font-size: 1rem;
     }
 
     .btn-ghost:hover { background: rgba(43, 110, 240, 0.06); }
 
     .shell {
-      width: min(560px, 100%);
+      width: min(720px, 100%);
       margin: 0 auto;
-      padding: 16px 16px calc(28px + var(--safe));
+      padding: 20px 20px calc(36px + var(--safe));
     }
 
     .topbar {
@@ -212,23 +223,23 @@
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      margin-bottom: 18px;
+      margin-bottom: 28px;
       animation: rise 0.45s ease both;
     }
 
     .brand-link {
       display: inline-flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
       text-decoration: none;
       color: var(--ink);
       font-weight: 700;
-      font-size: 0.95rem;
+      font-size: 1.05rem;
     }
 
     .brand-link img {
-      width: 40px;
-      height: 40px;
+      width: 48px;
+      height: 48px;
       object-fit: contain;
     }
 
@@ -238,50 +249,89 @@
       letter-spacing: -0.02em;
     }
 
-    @media (max-width: 380px) {
-      .brand-link span { display: none; }
-    }
-
     .stage {
       animation: rise 0.5s ease 0.08s both;
     }
 
     .stage-kicker {
-      font-size: 0.78rem;
+      font-size: 0.9rem;
       font-weight: 700;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.06em;
       text-transform: uppercase;
       color: var(--blue);
-      margin-bottom: 8px;
+      margin-bottom: 10px;
     }
 
     .stage h1 {
       font-family: Syne, sans-serif;
       font-weight: 800;
-      font-size: clamp(1.45rem, 5vw, 1.85rem);
+      font-size: clamp(2rem, 6vw, 2.6rem);
       letter-spacing: -0.03em;
-      line-height: 1.15;
-      margin-bottom: 8px;
+      line-height: 1.1;
+      margin-bottom: 12px;
+      overflow-wrap: anywhere;
     }
 
     .stage-lead {
       color: var(--muted);
-      font-size: 1rem;
+      font-size: 1.15rem;
       font-weight: 500;
-      margin-bottom: 22px;
-      max-width: 36ch;
+      margin-bottom: 28px;
+      line-height: 1.5;
+      max-width: 42rem;
     }
 
     .block {
-      margin-bottom: 18px;
+      margin-bottom: 24px;
     }
 
     .block-label {
-      font-size: 0.8rem;
+      font-size: 0.95rem;
       font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 12px;
+      letter-spacing: 0.01em;
+    }
+
+    .steps {
+      display: grid;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .step {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      padding: 16px 18px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.75);
+      border: 1px solid var(--line);
+    }
+
+    .step-num {
+      flex-shrink: 0;
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+      background: var(--blue);
+      color: #fff;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .step strong {
+      display: block;
+      font-size: 1.05rem;
+      margin-bottom: 4px;
+    }
+
+    .step span {
       color: var(--muted);
-      margin-bottom: 10px;
-      letter-spacing: 0.02em;
+      font-size: 0.98rem;
+      line-height: 1.4;
     }
 
     .auth-box {
@@ -494,18 +544,18 @@
     .nick-form {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 14px;
     }
 
     .nick-form input {
       width: 100%;
-      min-height: 52px;
-      padding: 0 16px;
+      min-height: 58px;
+      padding: 0 18px;
       border: 1.5px solid var(--line);
-      border-radius: 14px;
+      border-radius: 16px;
       font: inherit;
-      font-size: 1.05rem;
-      font-weight: 600;
+      font-size: 1.2rem;
+      font-weight: 700;
       background: #fff;
       color: var(--ink);
     }
@@ -513,6 +563,40 @@
     .nick-form input:focus {
       outline: 2px solid #b9ceff;
       border-color: var(--blue);
+    }
+
+    .nick-form .btn {
+      min-height: 58px;
+      font-size: 1.1rem;
+      width: 100%;
+    }
+
+    #googleBtn {
+      width: 100%;
+      min-height: 52px;
+    }
+
+    #googleBtn > div {
+      margin: 0 !important;
+    }
+
+    .link-box code {
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+
+    .shot-name {
+      white-space: normal !important;
+      overflow: visible !important;
+      text-overflow: unset !important;
+      line-height: 1.35;
+      font-size: 0.95rem !important;
+    }
+
+    .add-hint {
+      font-size: 1rem !important;
+      line-height: 1.45;
+      max-width: none !important;
     }
 
     .gallery {
@@ -669,7 +753,9 @@
 <body>
   <div id="landing" class="hero hidden">
     <div class="hero-brand">
-      <img class="hero-logo" src="logo/archive-pictures.png" alt="archive-pictures.com">
+      <a href="/" title="Archive Pictures">
+        <img class="hero-logo" src="logo/archive-pictures.png" alt="Archive Pictures">
+      </a>
     </div>
     <p class="hero-tag">All your images are here.</p>
     <p class="hero-lead">Choose a nickname, upload photos, share a personal link for every image.</p>
@@ -681,8 +767,8 @@
 
   <div id="app" class="shell hidden">
     <header class="topbar">
-      <a class="brand-link" href="./">
-        <img src="logo/favicon-96x96.png" alt="">
+      <a class="brand-link" href="/" title="Archive Pictures">
+        <img src="logo/favicon-96x96.png" alt="Archive Pictures">
         <span>archive-pictures.com</span>
       </a>
       <button type="button" class="btn btn-ghost hidden" id="signOutBtn">Sign out</button>
@@ -698,6 +784,23 @@
       <h1 id="pageTitle">Add images</h1>
       <p class="stage-lead" id="pageLead">Sign in with Google, then choose your nickname.</p>
 
+      <div class="steps hidden" id="stepsHelp">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div>
+            <strong>Choose a nickname</strong>
+            <span>Folder users/nickname will store your pictures.</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div>
+            <strong>Sign in with Google</strong>
+            <span>We save the nickname to your account for 24 hours.</span>
+          </div>
+        </div>
+      </div>
+
       <div class="block" id="linkBlock">
         <p class="block-label" id="linkLabel">Your link</p>
         <div class="link-box">
@@ -706,22 +809,22 @@
         </div>
       </div>
 
+      <div class="block" id="nickBlock">
+        <p class="block-label">Your nickname</p>
+        <form class="nick-form" id="nickForm">
+          <input id="nickInput" type="text" maxlength="24" autocomplete="username" placeholder="for example: marina" required>
+          <p class="add-hint">Only letters, numbers, dot and dash. This creates folder users/your-nick/</p>
+          <button type="submit" class="btn" id="nickSubmitBtn">Continue with this nickname</button>
+        </form>
+      </div>
+
       <div class="block auth-box" id="authBlock">
-        <p class="block-label">Account</p>
+        <p class="block-label">Google account</p>
         <div id="googleBtn"></div>
         <div class="user-chip hidden" id="userChip">
           <p class="user-line" id="userLine"><strong id="userName"></strong></p>
           <p class="folder-line" id="folderLine"></p>
         </div>
-      </div>
-
-      <div class="block hidden" id="nickBlock">
-        <p class="block-label">Choose nickname</p>
-        <form class="nick-form" id="nickForm">
-          <input id="nickInput" type="text" maxlength="24" autocomplete="username" placeholder="yourname" required>
-          <button type="submit" class="btn">Save nickname</button>
-        </form>
-        <p class="add-hint">Letters, numbers, dot, dash. This becomes your folder and links.</p>
       </div>
 
       <div class="block hidden" id="uploadBlock">
@@ -791,6 +894,7 @@
     const nickBlock = document.getElementById("nickBlock");
     const nickForm = document.getElementById("nickForm");
     const nickInput = document.getElementById("nickInput");
+    const stepsHelp = document.getElementById("stepsHelp");
     const uploadBlock = document.getElementById("uploadBlock");
     const authBlock = document.getElementById("authBlock");
     const linkBlock = document.getElementById("linkBlock");
@@ -1081,12 +1185,12 @@
       const { map, sha } = await loadJsonMap(USERS_JSON);
       const existing = findUserBySub(map, user.sub);
       if (existing && existing !== clean) {
-        throw new Error("You already have nickname @" + existing);
+        delete map[existing];
       }
-      if (map[clean] && map[clean].s !== user.sub) {
+      if (map[clean] && map[clean].s && map[clean].s !== user.sub) {
         throw new Error("Nickname is taken");
       }
-      map[clean] = { s: user.sub, e: user.email || "", n: user.name || clean };
+      map[clean] = { s: user.sub, e: user.email || "", n: user.name || clean, ok: 1 };
       await saveJsonMap(USERS_JSON, map, sha, "Register @" + clean);
       await ensureUserFolder(clean);
       user.nick = clean;
@@ -1099,6 +1203,7 @@
       const { map } = await loadJsonMap(USERS_JSON);
       const nick = findUserBySub(map, user.sub);
       if (!nick) return null;
+      if (!map[nick].ok) return null;
       user.nick = nick;
       user.pageId = nick;
       user.id = nick;
@@ -1296,18 +1401,6 @@
       return true;
     }
 
-    function askNickname(user) {
-      pendingGoogle = user;
-      show(nickBlock, true);
-      show(uploadBlock, false);
-      show(authBlock, true);
-      document.getElementById("googleBtn").classList.add("hidden");
-      show(userChip, false);
-      setPageCopy("Step 2", "Choose nickname", "This name becomes your folder and all your picture links.");
-      setStatus("Pick a unique nickname.", "ok");
-      nickInput.focus();
-    }
-
     async function onGoogleCredential(response) {
       try {
         const payload = parseJwt(response.credential);
@@ -1323,9 +1416,21 @@
           location.href = "?id=" + encodeURIComponent(existing.nick);
           return;
         }
-        askNickname(user);
+        const nick = sanitizeNick(nickInput.value);
+        if (!nick || nick.length < 3) {
+          pendingGoogle = user;
+          show(nickBlock, true);
+          show(stepsHelp, true);
+          setStatus("Type your nickname first (min 3 characters), then sign in again.", "err");
+          nickInput.focus();
+          return;
+        }
+        setStatus("Creating folder users/" + nick + "/ …");
+        const claimed = await claimNickname(user, nick);
+        pendingGoogle = null;
+        setSignedIn(claimed);
+        location.href = "?id=" + encodeURIComponent(claimed.nick);
       } catch (err) {
-        setSignedOut();
         setStatus("Google sign-in failed: " + (err.message || err), "err");
       }
     }
@@ -1345,7 +1450,7 @@
         size: "large",
         text: "signin_with",
         shape: "rectangular",
-        width: 280
+        width: 360
       });
     }
 
@@ -1371,19 +1476,26 @@
 
       nickForm.addEventListener("submit", async function (e) {
         e.preventDefault();
-        if (!pendingGoogle) {
-          setStatus("Sign in with Google first.", "err");
+        const nick = sanitizeNick(nickInput.value);
+        if (!nick || nick.length < 3) {
+          setStatus("Nickname must be at least 3 characters.", "err");
+          nickInput.focus();
           return;
         }
-        try {
-          setStatus("Saving nickname…");
-          const user = await claimNickname(pendingGoogle, nickInput.value);
-          pendingGoogle = null;
-          setSignedIn(user);
-          location.href = "?id=" + encodeURIComponent(user.nick);
-        } catch (err) {
-          setStatus(err.message || String(err), "err");
+        nickInput.value = nick;
+        if (pendingGoogle) {
+          try {
+            setStatus("Creating folder users/" + nick + "/ …");
+            const user = await claimNickname(pendingGoogle, nick);
+            pendingGoogle = null;
+            setSignedIn(user);
+            location.href = "?id=" + encodeURIComponent(user.nick);
+          } catch (err) {
+            setStatus(err.message || String(err), "err");
+          }
+          return;
         }
+        setStatus("Nickname @" + nick + " ready. Now sign in with Google.", "ok");
       });
 
       addImage.addEventListener("click", function (e) {
@@ -1430,19 +1542,30 @@
         show(viewerBlock, false);
         show(galleryWrap, false);
         show(searchBox, false);
-        show(nickBlock, false);
+        show(linkBlock, false);
+        show(stepsHelp, true);
+        show(nickBlock, true);
         show(authBlock, true);
-        show(linkBlock, true);
-        linkLabel.textContent = "Sign-in page";
-        sessionIdEl.textContent = publicLink(PAGE_ID);
-        setPageCopy("Step 1", "Sign in", "Sign in with Google, then choose a nickname for your cabinet.");
+        document.getElementById("googleBtn").classList.remove("hidden");
+        setPageCopy(
+          "Create cabinet",
+          "Choose nickname & sign in",
+          "First type a nickname for your folder, then sign in with Google."
+        );
         const existing = readSessionRaw();
         if (existing && existing.nick) {
-          location.replace("?id=" + encodeURIComponent(existing.nick));
-        } else {
-          initGoogle();
-          setStatus("Sign in with Google to continue.", "ok");
+          try {
+            const users = await loadJsonMap(USERS_JSON);
+            if (users.map[existing.nick] && users.map[existing.nick].ok) {
+              location.replace("?id=" + encodeURIComponent(existing.nick));
+              return;
+            }
+          } catch (_) {}
+          localStorage.removeItem(USER_KEY);
         }
+        initGoogle();
+        setStatus("1) Enter nickname  2) Sign in with Google", "ok");
+        nickInput.focus();
         return;
       }
 
@@ -1451,6 +1574,7 @@
         show(viewerBlock, false);
         show(authBlock, false);
         show(nickBlock, false);
+        show(stepsHelp, false);
         show(linkBlock, true);
         linkLabel.textContent = "Gallery link";
         sessionIdEl.textContent = publicLink(PICTURES_ID);
@@ -1471,6 +1595,7 @@
         show(uploadBlock, false);
         show(authBlock, false);
         show(nickBlock, false);
+        show(stepsHelp, false);
         show(galleryWrap, false);
         show(searchBox, false);
         const session = readSessionRaw();
@@ -1485,6 +1610,7 @@
 
       show(viewerBlock, false);
       show(nickBlock, false);
+      show(stepsHelp, false);
       show(linkBlock, true);
       linkLabel.textContent = "Cabinet link";
       sessionIdEl.textContent = publicLink(routeId);
