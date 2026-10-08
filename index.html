@@ -907,6 +907,7 @@
         <div class="link-box">
           <code id="sessionId"></code>
           <button type="button" class="btn" id="copyLinkBtn" title="Copy link">Copy</button>
+          <a class="btn" id="openLinkBtn" href="#" target="_blank" rel="noopener">Open</a>
         </div>
       </div>
 
@@ -973,11 +974,17 @@
     const RESERVED = { addimages: 1, pictures: 1 };
     const GOOGLE_CLIENT_ID = "473688037639-2hvoaad0h1is8pi2rn0akeqbhgutb3j5.apps.googleusercontent.com";
     const API_BASE = "https://yellow-cloud-62cc.archivepictures-support.workers.dev";
-    const USERS_JSON = "users.json";
-    const IMAGES_INDEX = "images-index.json";
-    const TAGS_JS = "tags.js";
-    const TAGS_JSON = "tags.json";
+    const USERS_JSON = "users/index.json";
+    const TAGS_JSON = "data/tags.json";
     const SHARD_SIZE = 500;
+
+    function userImagesIndexPath(nick) {
+      return userFolderPath(nick) + "/images-index.json";
+    }
+
+    function userImagesShardPath(nick, fileName) {
+      return userFolderPath(nick) + "/" + fileName;
+    }
 
     const landing = document.getElementById("landing");
     const app = document.getElementById("app");
@@ -996,7 +1003,17 @@
     const pageLead = document.getElementById("pageLead");
     const addZone = document.getElementById("addZone");
     const copyLinkBtn = document.getElementById("copyLinkBtn");
+    const openLinkBtn = document.getElementById("openLinkBtn");
     const sessionIdEl = document.getElementById("sessionId");
+
+    function setShareLink(url) {
+      const href = String(url || "");
+      sessionIdEl.textContent = href;
+      if (openLinkBtn) {
+        openLinkBtn.href = href || "#";
+        openLinkBtn.classList.toggle("hidden", !href);
+      }
+    }
     const linkLabel = document.getElementById("linkLabel");
     const nickBlock = document.getElementById("nickBlock");
     const nickForm = document.getElementById("nickForm");
@@ -1197,6 +1214,11 @@
     }
 
     function tagsFromName(fileName, imageId) {
+      if (window.AP_TAGS && AP_TAGS.fromFileName) {
+        return AP_TAGS.fromFileName(fileName, imageId).map(function (t) {
+          return t.slug;
+        });
+      }
       const raw = (fileName || imageId || "").replace(/\.[^.]+$/, "");
       const parts = raw.toLowerCase().split(/[^a-z0-9]+/).filter(function (p) {
         return p.length >= 2;
@@ -1205,12 +1227,12 @@
       parts.forEach(function (p) {
         if (out.indexOf(p) === -1) out.push(p);
       });
-      if (out.indexOf(imageId) === -1) out.push(imageId);
-      return out.slice(0, 24);
+      if (imageId && out.indexOf(imageId) === -1) out.push(imageId);
+      return out.slice(0, 8);
     }
 
-    async function loadImagesIndex() {
-      const file = await getGitHub(IMAGES_INDEX);
+    async function loadUserImagesIndex(nick) {
+      const file = await getGitHub(userImagesIndexPath(nick));
       if (!file || !file.content) {
         return { index: { files: ["images-1.json"], count: 0 }, sha: null };
       }
@@ -1222,25 +1244,30 @@
       return { index: index, sha: file.sha || null };
     }
 
-    async function loadAllImagesMap() {
-      const { index } = await loadImagesIndex();
+    async function loadUserImagesMap(nick) {
+      const { index } = await loadUserImagesIndex(nick);
       const all = {};
       for (let i = 0; i < index.files.length; i++) {
-        const { map } = await loadJsonMap(index.files[i]);
+        const shardFile = index.files[i];
+        const path = shardFile.indexOf("/") >= 0 ? shardFile : userImagesShardPath(nick, shardFile);
+        const { map } = await loadJsonMap(path);
         Object.keys(map).forEach(function (key) {
           all[key] = map[key];
         });
       }
-      try {
-        const legacy = await getGitHub("images.json");
-        if (legacy && legacy.content) {
-          const text = base64ToText(String(legacy.content).replace(/\n/g, ""));
-          const map = JSON.parse(text) || {};
-          Object.keys(map).forEach(function (key) {
-            if (!all[key]) all[key] = map[key];
-          });
-        }
-      } catch (_) {}
+      return all;
+    }
+
+    async function loadAllImagesMap() {
+      const all = {};
+      const users = await loadJsonMap(USERS_JSON);
+      const nicks = Object.keys(users.map || {});
+      for (let i = 0; i < nicks.length; i++) {
+        const nickMap = await loadUserImagesMap(nicks[i]);
+        Object.keys(nickMap).forEach(function (key) {
+          all[key] = nickMap[key];
+        });
+      }
       return all;
     }
 
@@ -1255,59 +1282,89 @@
     }
 
     async function saveImageRecord(imageId, record) {
-      const loaded = await loadImagesIndex();
+      const nick = record.u;
+      if (!nick) throw new Error("Missing user folder");
+      const loaded = await loadUserImagesIndex(nick);
       let index = loaded.index;
       let indexSha = loaded.sha;
-      let shardPath = index.files[index.files.length - 1];
+      let shardName = index.files[index.files.length - 1];
+      if (shardName.indexOf("/") >= 0) shardName = shardName.split("/").pop();
+      let shardPath = userImagesShardPath(nick, shardName);
       let shard = await loadJsonMap(shardPath);
       if (Object.keys(shard.map).length >= SHARD_SIZE) {
         const nextNum = index.files.length + 1;
-        shardPath = "images-" + nextNum + ".json";
-        index.files.push(shardPath);
+        shardName = "images-" + nextNum + ".json";
+        index.files.push(shardName);
+        shardPath = userImagesShardPath(nick, shardName);
         shard = { map: {}, sha: null };
       }
       shard.map[imageId] = record;
-      await saveJsonMap(shardPath, shard.map, shard.sha, "Index " + imageId);
+      await saveJsonMap(shardPath, shard.map, shard.sha, "Index " + imageId + " @" + nick);
       index.count = (index.count || 0) + 1;
-      await saveJsonMap(IMAGES_INDEX, index, indexSha, "Update images index");
+      index.files = index.files.map(function (f) {
+        return f.indexOf("/") >= 0 ? f.split("/").pop() : f;
+      });
+      await saveJsonMap(userImagesIndexPath(nick), index, indexSha, "Update images index @" + nick);
     }
 
-    async function rebuildTagsFiles(allMap) {
-      const tags = {};
-      const images = {};
-      Object.keys(allMap).forEach(function (id) {
-        const item = allMap[id];
-        if (!item) return;
-        const t = Array.isArray(item.g) ? item.g : tagsFromName(item.n, id);
-        images[id] = { n: item.n || id, u: item.u || "", p: item.p || "", g: t };
-        t.forEach(function (tag) {
-          if (!tags[tag]) tags[tag] = [];
-          if (tags[tag].indexOf(id) === -1) tags[tag].push(id);
-        });
+    async function mergeSiteTags(slugs) {
+      const list = [];
+      const seen = {};
+      (slugs || []).forEach(function (slug) {
+        const s = String(slug || "").trim();
+        if (!s || seen[s]) return;
+        seen[s] = true;
+        const name = (window.AP_TAGS && AP_TAGS.name) ? AP_TAGS.name(s) : s;
+        list.push({ slug: s, name: name });
       });
-      const payload = { tags: tags, images: images };
-      const tagsJson = await getGitHub(TAGS_JSON);
+      if (!list.length) return;
+      const file = await getGitHub(TAGS_JSON);
+      let current = [];
+      if (file && file.content) {
+        try {
+          current = JSON.parse(base64ToText(String(file.content).replace(/\n/g, ""))) || [];
+        } catch (_) {
+          current = [];
+        }
+      }
+      if (!Array.isArray(current)) current = [];
+      const bySlug = {};
+      current.forEach(function (t) {
+        if (t && t.slug) bySlug[t.slug] = t;
+      });
+      let changed = false;
+      list.forEach(function (t) {
+        if (!bySlug[t.slug]) {
+          bySlug[t.slug] = t;
+          current.push(t);
+          changed = true;
+        }
+      });
+      if (!changed) return;
       await putGitHub(
         TAGS_JSON,
-        textToBase64(JSON.stringify(payload)),
+        textToBase64(JSON.stringify(current, null, 2) + "\n"),
         "Update tags.json",
-        tagsJson && tagsJson.sha ? tagsJson.sha : undefined
+        file && file.sha ? file.sha : undefined
       );
-      const jsBody = "window.ARCHIVE_PICTURES_TAGS=" + JSON.stringify(payload) + ";";
-      const tagsJs = await getGitHub(TAGS_JS);
-      await putGitHub(
-        TAGS_JS,
-        textToBase64(jsBody),
-        "Update tags.js",
-        tagsJs && tagsJs.sha ? tagsJs.sha : undefined
-      );
+      if (window.AP_TAGS && AP_TAGS.mergeUserTags) AP_TAGS.mergeUserTags(list);
     }
 
     async function ensureUserFolder(nick) {
-      const keepPath = userFolderPath(nick) + "/.keep";
-      const check = await getGitHub(keepPath);
-      if (check) return;
-      await putGitHub(keepPath, textToBase64("."), "Create folder " + nick);
+      const indexPath = userImagesIndexPath(nick);
+      const check = await getGitHub(indexPath);
+      if (check && check.content) return;
+      await saveJsonMap(
+        indexPath,
+        { files: ["images-1.json"], count: 0 },
+        check && check.sha ? check.sha : null,
+        "Create folder " + nick
+      );
+      const shardPath = userImagesShardPath(nick, "images-1.json");
+      const shard = await getGitHub(shardPath);
+      if (!shard || !shard.content) {
+        await saveJsonMap(shardPath, {}, null, "Init images @" + nick);
+      }
     }
 
     async function claimNickname(user, nick) {
@@ -1370,8 +1427,8 @@
       };
       await saveImageRecord(imageId, record);
       all[imageId] = record;
-      await rebuildTagsFiles(all);
-      return { id: imageId, name: file.name, path: path, link: publicLink(imageId) };
+      await mergeSiteTags(tags);
+      return { id: imageId, name: file.name, path: path, link: rawFileUrl(path) };
     }
 
     function applySeoForImage(imageId, item) {
@@ -1483,7 +1540,7 @@
         card.addEventListener("contextmenu", async function (e) {
           e.preventDefault();
           try {
-            await navigator.clipboard.writeText(publicLink(imageId));
+            await navigator.clipboard.writeText(rawFileUrl(item.p));
             setStatus("Picture link copied.", "ok");
           } catch (_) {
             setStatus("Could not copy link.", "err");
@@ -1537,11 +1594,11 @@
       viewerImg.alt = item.n || imageId;
       bindImageLoader(viewerImg, viewerMedia, item.p);
       viewerName.textContent = item.n || imageId;
-      viewerUser.textContent = "@" + item.u + " · " + publicLink(imageId);
+      viewerUser.textContent = "@" + item.u;
       show(viewerBlock, true);
       show(linkBlock, true);
       linkLabel.textContent = "Picture link";
-      sessionIdEl.textContent = publicLink(imageId);
+      setShareLink(rawFileUrl(item.p));
       setPageCopy("Picture", item.n || imageId, "Share this link to open the image.");
       applySeoForImage(imageId, item);
       return true;
@@ -1612,6 +1669,17 @@
         }
       });
 
+      if (openLinkBtn) {
+        openLinkBtn.addEventListener("click", function (e) {
+          const href = sessionIdEl.textContent || "";
+          if (!href) {
+            e.preventDefault();
+            return;
+          }
+          openLinkBtn.href = href;
+        });
+      }
+
       signOutBtn.addEventListener("click", function () {
         setSignedOut();
         if (window.google && google.accounts && google.accounts.id) {
@@ -1671,8 +1739,9 @@
             setStatus("Uploading " + file.name + "…");
             const result = await uploadFile(file, googleUser);
             setStatus("Uploaded. Link: " + result.link, "ok");
-            sessionIdEl.textContent = result.link;
+            setShareLink(result.link);
             linkLabel.textContent = "Picture link";
+            show(linkBlock, true);
             await loadAndRenderGallery(googleUser.nick);
           } catch (err) {
             setStatus("Failed: " + file.name + " — " + (err.message || err), "err");
@@ -1723,7 +1792,7 @@
         show(stepsHelp, false);
         show(linkBlock, true);
         linkLabel.textContent = "Gallery link";
-        sessionIdEl.textContent = publicLink(PICTURES_ID);
+        setShareLink(publicLink(PICTURES_ID));
         setPageCopy("Gallery", "All pictures", "25×25 shortcuts. Click opens the picture in the owner cabinet. Right-click copies the link.");
         const session = readSessionRaw();
         if (session) {
@@ -1759,7 +1828,7 @@
       show(stepsHelp, false);
       show(linkBlock, true);
       linkLabel.textContent = "Cabinet link";
-      sessionIdEl.textContent = publicLink(routeId);
+      setShareLink(publicLink(routeId));
       setPageCopy("Cabinet", "@" + routeId, "Shortcuts open pictures here in the cabinet.");
       galleryTitle.textContent = "Picture shortcuts";
       const session = readSessionRaw();
@@ -1793,6 +1862,7 @@
     }
 
     bindCommon();
+    if (window.AP_TAGS && AP_TAGS.loadUserTags) AP_TAGS.loadUserTags();
 
     if (!id) {
       landing.classList.remove("hidden");
