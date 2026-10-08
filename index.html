@@ -585,28 +585,26 @@
       overflow-wrap: anywhere;
     }
 
-    .shot-name {
-      white-space: normal !important;
-      overflow: visible !important;
-      text-overflow: unset !important;
-      line-height: 1.35;
-      font-size: 0.95rem !important;
-    }
-
     .add-hint {
       font-size: 1rem !important;
       line-height: 1.45;
       max-width: none !important;
     }
 
-    .gallery {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
+    #viewerName.shot-name {
+      white-space: normal;
+      overflow: visible;
+      text-overflow: unset;
+      font-size: 1.05rem;
+      line-height: 1.35;
+      text-align: left;
     }
 
-    @media (min-width: 560px) {
-      .gallery { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+      gap: 10px 8px;
+      align-items: start;
     }
 
     .gallery:empty::after {
@@ -620,22 +618,34 @@
     .shot {
       display: flex;
       flex-direction: column;
-      gap: 8px;
-      padding: 8px;
-      border-radius: 16px;
-      background: rgba(255, 255, 255, 0.82);
-      border: 1px solid var(--line);
+      align-items: center;
+      gap: 6px;
+      padding: 8px 4px;
+      border-radius: 12px;
+      background: transparent;
+      border: none;
       text-decoration: none;
       color: inherit;
+      cursor: pointer;
+      min-width: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .shot:hover,
+    .shot:focus-visible {
+      background: rgba(255, 255, 255, 0.7);
+      outline: none;
     }
 
     .shot-media {
       position: relative;
-      aspect-ratio: 1;
-      width: 100%;
-      border-radius: 12px;
+      width: 25px;
+      height: 25px;
+      border-radius: 6px;
       background: #e8eef7;
       overflow: hidden;
+      flex-shrink: 0;
+      box-shadow: 0 0 0 1px var(--line);
     }
 
     .shot-thumb {
@@ -658,7 +668,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 10px;
+      gap: 2px;
       background: #e8eef7;
       pointer-events: none;
     }
@@ -668,24 +678,30 @@
     }
 
     .shot-spinner {
-      width: 36px;
-      height: 36px;
+      width: 14px;
+      height: 14px;
       border-radius: 50%;
-      border: 3px solid rgba(43, 110, 240, 0.2);
+      border: 2px solid rgba(43, 110, 240, 0.2);
       border-top-color: var(--blue);
       animation: spin 0.8s linear infinite;
     }
 
     .shot-wait {
-      font-size: 0.85rem;
-      font-weight: 700;
-      color: var(--muted);
-      opacity: 0;
-      transition: opacity 0.15s ease;
+      display: none;
     }
 
-    .shot-media:hover .shot-wait {
-      opacity: 1;
+    .shot:hover .shot-wait,
+    .shot:focus-visible .shot-wait {
+      display: block;
+      position: absolute;
+      left: 50%;
+      top: calc(100% + 4px);
+      transform: translateX(-50%);
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: var(--muted);
+      white-space: nowrap;
+      z-index: 2;
     }
 
     .shot-wait::after {
@@ -693,8 +709,8 @@
     }
 
     @media (hover: none) {
-      .shot-wait {
-        opacity: 1;
+      .shot .shot-wait {
+        display: none;
       }
     }
 
@@ -735,35 +751,35 @@
     .shot-meta {
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      align-items: center;
+      gap: 2px;
       min-width: 0;
+      width: 100%;
+      text-align: center;
     }
 
     .shot-name {
-      font-size: 0.82rem;
+      font-size: 0.68rem;
       font-weight: 700;
-      white-space: nowrap;
+      line-height: 1.2;
+      max-width: 100%;
       overflow: hidden;
       text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .shot-user {
-      font-size: 0.75rem;
+      font-size: 0.62rem;
       color: var(--muted);
       font-weight: 600;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .shot-actions {
-      display: flex;
-      gap: 6px;
-    }
-
-    .shot-actions .btn {
-      min-height: 36px;
-      padding: 0 10px;
-      font-size: 0.78rem;
-      border-radius: 10px;
-      flex: 1;
+      display: none;
     }
 
     .viewer {
@@ -1308,7 +1324,7 @@
       if (map[clean] && map[clean].s && map[clean].s !== user.sub) {
         throw new Error("Nickname is taken");
       }
-      map[clean] = { s: user.sub, e: user.email || "", n: user.name || clean, ok: 1 };
+      map[clean] = { s: user.sub, ok: 1 };
       await saveJsonMap(USERS_JSON, map, sha, "Register @" + clean);
       await ensureUserFolder(clean);
       user.nick = clean;
@@ -1318,10 +1334,17 @@
     }
 
     async function resolveExistingUser(user) {
-      const { map } = await loadJsonMap(USERS_JSON);
+      const loaded = await loadJsonMap(USERS_JSON);
+      const map = loaded.map;
       const nick = findUserBySub(map, user.sub);
       if (!nick) return null;
       if (!map[nick].ok) return null;
+      if (map[nick].e || map[nick].n || map[nick].i) {
+        map[nick] = { s: map[nick].s || user.sub, ok: 1 };
+        try {
+          await saveJsonMap(USERS_JSON, map, loaded.sha, "Compact @" + nick);
+        } catch (_) {}
+      }
       user.nick = nick;
       user.pageId = nick;
       user.id = nick;
@@ -1410,6 +1433,12 @@
       navCabinet.href = "?id=" + PAGE_ID;
     }
 
+    function cabinetLinkForImage(item, imageId) {
+      const nick = item && item.u ? item.u : "";
+      if (!nick) return "?id=" + encodeURIComponent(imageId);
+      return "?id=" + encodeURIComponent(nick) + "&img=" + encodeURIComponent(imageId);
+    }
+
     function renderGallery(entries, opts) {
       gallery.innerHTML = "";
       const sorted = entries.slice().sort(function (a, b) {
@@ -1418,11 +1447,12 @@
       sorted.forEach(function (row) {
         const item = row.item;
         const imageId = row.id;
-        const card = document.createElement("div");
+        const card = document.createElement("button");
+        card.type = "button";
         card.className = "shot";
+        card.title = (item.n || imageId) + " — open in cabinet";
         const media = document.createElement("div");
         media.className = "shot-media";
-        media.title = "Wait";
         const loader = document.createElement("div");
         loader.className = "shot-loader";
         loader.innerHTML = "<div class=\"shot-spinner\" aria-hidden=\"true\"></div><span class=\"shot-wait\"></span>";
@@ -1430,9 +1460,6 @@
         img.className = "shot-thumb";
         img.alt = item.n || imageId;
         img.loading = "lazy";
-        media.addEventListener("click", function () {
-          location.href = "?id=" + encodeURIComponent(imageId);
-        });
         media.appendChild(loader);
         media.appendChild(img);
         bindImageLoader(img, media, item.p);
@@ -1441,20 +1468,20 @@
         const name = document.createElement("div");
         name.className = "shot-name";
         name.textContent = item.n || imageId;
-        const user = document.createElement("div");
-        user.className = "shot-user";
-        user.textContent = "@" + (item.u || "") + " · ?" + "id=" + imageId;
-        const actions = document.createElement("div");
-        actions.className = "shot-actions";
-        const openBtn = document.createElement("a");
-        openBtn.className = "btn btn-ghost";
-        openBtn.href = "?id=" + encodeURIComponent(imageId);
-        openBtn.textContent = "Open";
-        const copyBtn = document.createElement("button");
-        copyBtn.type = "button";
-        copyBtn.className = "btn";
-        copyBtn.textContent = "Copy link";
-        copyBtn.addEventListener("click", async function () {
+        meta.appendChild(name);
+        if (!opts || !opts.hideUser) {
+          const user = document.createElement("div");
+          user.className = "shot-user";
+          user.textContent = "@" + (item.u || "");
+          meta.appendChild(user);
+        }
+        card.appendChild(media);
+        card.appendChild(meta);
+        card.addEventListener("click", function () {
+          location.href = cabinetLinkForImage(item, imageId);
+        });
+        card.addEventListener("contextmenu", async function (e) {
+          e.preventDefault();
           try {
             await navigator.clipboard.writeText(publicLink(imageId));
             setStatus("Picture link copied.", "ok");
@@ -1462,13 +1489,6 @@
             setStatus("Could not copy link.", "err");
           }
         });
-        actions.appendChild(openBtn);
-        actions.appendChild(copyBtn);
-        meta.appendChild(name);
-        if (!opts || !opts.hideUser) meta.appendChild(user);
-        meta.appendChild(actions);
-        card.appendChild(media);
-        card.appendChild(meta);
         gallery.appendChild(card);
       });
       show(galleryWrap, true);
@@ -1704,7 +1724,7 @@
         show(linkBlock, true);
         linkLabel.textContent = "Gallery link";
         sessionIdEl.textContent = publicLink(PICTURES_ID);
-        setPageCopy("Gallery", "All pictures", "Search by picture name and copy any picture link.");
+        setPageCopy("Gallery", "All pictures", "25×25 shortcuts. Click opens the picture in the owner cabinet. Right-click copies the link.");
         const session = readSessionRaw();
         if (session) {
           setSignedIn(session, false);
@@ -1712,7 +1732,7 @@
           document.getElementById("googleBtn").classList.add("hidden");
         }
         await loadAndRenderGallery(null);
-        galleryTitle.textContent = "All pictures";
+        galleryTitle.textContent = "Picture shortcuts";
         return;
       }
 
@@ -1740,8 +1760,8 @@
       show(linkBlock, true);
       linkLabel.textContent = "Cabinet link";
       sessionIdEl.textContent = publicLink(routeId);
-      setPageCopy("Cabinet", "@" + routeId, "Personal archive folder and picture links.");
-      galleryTitle.textContent = "Your pictures";
+      setPageCopy("Cabinet", "@" + routeId, "Shortcuts open pictures here in the cabinet.");
+      galleryTitle.textContent = "Picture shortcuts";
       const session = readSessionRaw();
       const isOwner = session && session.nick === routeId;
       if (isOwner) {
@@ -1755,9 +1775,15 @@
         show(authBlock, true);
         document.getElementById("googleBtn").innerHTML =
           "<a class=\"btn\" href=\"?id=" + PAGE_ID + "\">Sign in to upload</a>";
-        setStatus("Public view of @" + routeId + " cabinet.", "ok");
+        setStatus("Public cabinet @" + routeId, "ok");
       }
       await loadAndRenderGallery(routeId);
+      const openImg = params.get("img");
+      if (openImg && images[openImg] && images[openImg].u === routeId) {
+        await showImagePage(openImg);
+        show(galleryWrap, true);
+        setStatus("Opened in cabinet: " + (images[openImg].n || openImg), "ok");
+      }
     }
 
     if (searchInput) {
