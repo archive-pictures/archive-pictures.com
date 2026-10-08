@@ -676,34 +676,55 @@
       text-align: left;
     }
 
-    .gallery {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
-      gap: 10px 8px;
-      align-items: start;
+    .gallery-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
     }
 
-    .gallery:empty::after {
+    .gallery {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: flex-start;
+      justify-content: flex-start;
+    }
+
+    .gallery-row:empty {
+      display: none;
+    }
+
+    #gallery:empty::after {
       content: "No pictures yet.";
-      grid-column: 1 / -1;
       color: var(--muted);
       font-size: 0.95rem;
       padding: 12px 2px;
+      width: 100%;
+    }
+
+    .shell.is-browse #gallery {
+      display: none !important;
+    }
+
+    .shell.is-browse .gallery-stack {
+      display: flex;
     }
 
     .shot {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 6px;
-      padding: 8px 4px;
-      border-radius: 12px;
+      gap: 4px;
+      padding: 0;
+      width: 30px;
+      border-radius: 4px;
       background: transparent;
       border: none;
       text-decoration: none;
       color: inherit;
       cursor: pointer;
-      min-width: 0;
+      min-width: 30px;
       -webkit-tap-highlight-color: transparent;
     }
 
@@ -715,9 +736,13 @@
 
     .shot-media {
       position: relative;
-      width: 25px;
-      height: 25px;
-      border-radius: 6px;
+      width: 30px;
+      height: 30px;
+      min-width: 30px;
+      min-height: 30px;
+      max-width: 30px;
+      max-height: 30px;
+      border-radius: 4px;
       background: #e8eef7;
       overflow: hidden;
       flex-shrink: 0;
@@ -725,9 +750,10 @@
     }
 
     .shot-thumb {
-      width: 100%;
-      height: 100%;
+      width: 30px;
+      height: 30px;
       object-fit: cover;
+      object-position: center;
       display: block;
       opacity: 0;
       transition: opacity 0.25s ease;
@@ -905,20 +931,25 @@
     }
 
     .shell.is-browse .gallery {
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-      gap: 8px;
+      gap: 6px;
     }
 
     .shell.is-browse .shot {
       padding: 0;
-      border-radius: 0;
+      border-radius: 4px;
       gap: 0;
+      width: 30px;
     }
 
     .shell.is-browse .shot-media {
-      width: 100%;
-      aspect-ratio: 1;
-      border-radius: 2px;
+      width: 30px;
+      height: 30px;
+      min-width: 30px;
+      min-height: 30px;
+      max-width: 30px;
+      max-height: 30px;
+      border-radius: 4px;
+      aspect-ratio: 1 / 1;
     }
 
     .shell.is-browse .shot-meta {
@@ -1085,6 +1116,10 @@
         <div class="search-box hidden" id="searchBox">
           <input id="searchInput" type="search" placeholder="Search pictures" autocomplete="off">
         </div>
+        <div class="gallery-stack hidden" id="galleryStack">
+          <div class="gallery gallery-row" id="galleryAdmin"></div>
+          <div class="gallery gallery-row" id="galleryUsers"></div>
+        </div>
         <div class="gallery" id="gallery"></div>
       </div>
     </main>
@@ -1096,12 +1131,16 @@
     const SESSION_MS = 24 * 60 * 60 * 1000;
     const PAGE_ID = "register";
     const PICTURES_ID = "pictures";
+    const ADMIN_NICK = "admin";
     const RESERVED = { register: 1, addimages: 1, pictures: 1 };
     const GOOGLE_CLIENT_ID = "473688037639-2hvoaad0h1is8pi2rn0akeqbhgutb3j5.apps.googleusercontent.com";
     const API_BASE = "https://yellow-cloud-62cc.archivepictures-support.workers.dev";
-    const USERS_JSON = "users/index.json";
     const TAGS_JSON = "data/tags.json";
     const SHARD_SIZE = 500;
+
+    function userIndexPath(nick) {
+      return userFolderPath(nick) + "/index.json";
+    }
 
     function userImagesIndexPath(nick) {
       return userFolderPath(nick) + "/images-index.json";
@@ -1150,6 +1189,9 @@
     const viewerBlock = document.getElementById("viewerBlock");
     const galleryWrap = document.getElementById("galleryWrap");
     const gallery = document.getElementById("gallery");
+    const galleryStack = document.getElementById("galleryStack");
+    const galleryAdmin = document.getElementById("galleryAdmin");
+    const galleryUsers = document.getElementById("galleryUsers");
     const galleryTitle = document.getElementById("galleryTitle");
     const searchBox = document.getElementById("searchBox");
     const searchInput = document.getElementById("searchInput");
@@ -1321,11 +1363,37 @@
       return putGitHub(path, textToBase64(JSON.stringify(map)), message, sha || undefined);
     }
 
-    function findUserBySub(map, sub) {
-      for (const key of Object.keys(map)) {
-        if (map[key] && map[key].s === sub) return key;
+    async function listUserNicks() {
+      const data = await getGitHub("users");
+      if (data && Array.isArray(data.list)) {
+        return data.list
+          .filter(function (item) {
+            return item && item.type === "dir" && item.name && item.name !== "index.json";
+          })
+          .map(function (item) { return item.name; });
+      }
+      return [];
+    }
+
+    async function loadUserIndex(nick) {
+      return loadJsonMap(userIndexPath(nick));
+    }
+
+    async function findNickBySub(sub) {
+      const nicks = await listUserNicks();
+      for (let i = 0; i < nicks.length; i++) {
+        const nick = nicks[i];
+        const loaded = await loadUserIndex(nick);
+        if (loaded.map && loaded.map.s === sub && loaded.map.ok) return nick;
       }
       return null;
+    }
+
+    async function usersNickMap() {
+      const nicks = await listUserNicks();
+      const map = {};
+      nicks.forEach(function (nick) { map[nick] = 1; });
+      return map;
     }
 
     function sanitizeImageId(fileName) {
@@ -1385,8 +1453,7 @@
 
     async function loadAllImagesMap() {
       const all = {};
-      const users = await loadJsonMap(USERS_JSON);
-      const nicks = Object.keys(users.map || {});
+      const nicks = await listUserNicks();
       for (let i = 0; i < nicks.length; i++) {
         const nickMap = await loadUserImagesMap(nicks[i]);
         Object.keys(nickMap).forEach(function (key) {
@@ -1498,16 +1565,20 @@
       if (RESERVED[clean]) throw new Error("This nickname is reserved");
       const allImages = await loadAllImagesMap();
       if (allImages[clean]) throw new Error("This name is used by a picture");
-      const { map, sha } = await loadJsonMap(USERS_JSON);
-      const existing = findUserBySub(map, user.sub);
-      if (existing && existing !== clean) {
-        delete map[existing];
-      }
-      if (map[clean] && map[clean].s && map[clean].s !== user.sub) {
+      const folder = await loadUserIndex(clean);
+      if (folder.map && folder.map.s && folder.map.s !== user.sub) {
         throw new Error("Nickname is taken");
       }
-      map[clean] = { s: user.sub, ok: 1 };
-      await saveJsonMap(USERS_JSON, map, sha, "Register @" + clean);
+      const mine = await findNickBySub(user.sub);
+      if (mine && mine !== clean) {
+        throw new Error("This Google account already has @" + mine);
+      }
+      await saveJsonMap(
+        userIndexPath(clean),
+        { s: user.sub, ok: 1 },
+        folder.sha,
+        "Register @" + clean
+      );
       await ensureUserFolder(clean);
       user.nick = clean;
       user.pageId = clean;
@@ -1516,15 +1587,18 @@
     }
 
     async function resolveExistingUser(user) {
-      const loaded = await loadJsonMap(USERS_JSON);
-      const map = loaded.map;
-      const nick = findUserBySub(map, user.sub);
+      const nick = await findNickBySub(user.sub);
       if (!nick) return null;
-      if (!map[nick].ok) return null;
-      if (map[nick].e || map[nick].n || map[nick].i) {
-        map[nick] = { s: map[nick].s || user.sub, ok: 1 };
+      const loaded = await loadUserIndex(nick);
+      if (!loaded.map || !loaded.map.ok) return null;
+      if (loaded.map.e || loaded.map.n || loaded.map.i) {
         try {
-          await saveJsonMap(USERS_JSON, map, loaded.sha, "Compact @" + nick);
+          await saveJsonMap(
+            userIndexPath(nick),
+            { s: loaded.map.s || user.sub, ok: 1 },
+            loaded.sha,
+            "Compact @" + nick
+          );
         } catch (_) {}
       }
       user.nick = nick;
@@ -1535,9 +1609,9 @@
 
     async function uploadFile(file, user) {
       const all = await loadAllImagesMap();
-      const users = await loadJsonMap(USERS_JSON);
+      const nicks = await usersNickMap();
       const base = sanitizeImageId(file.name);
-      const imageId = uniqueImageId(base, all, users.map);
+      const imageId = uniqueImageId(base, all, nicks);
       const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
       const path = userFolderPath(user.nick) + "/" + imageId + "." + ext;
       const content = await fileToBase64(file);
@@ -1623,58 +1697,108 @@
       return "?id=" + encodeURIComponent(nick) + "&img=" + encodeURIComponent(imageId);
     }
 
-    function renderGallery(entries, opts) {
-      gallery.innerHTML = "";
-      const sorted = entries.slice().sort(function (a, b) {
+    function sortByTimeDesc(entries) {
+      return entries.slice().sort(function (a, b) {
         return (b.item.t || 0) - (a.item.t || 0);
       });
-      sorted.forEach(function (row) {
-        const item = row.item;
-        const imageId = row.id;
-        const card = document.createElement("button");
-        card.type = "button";
-        card.className = "shot";
-        card.title = item.n || imageId;
-        const media = document.createElement("div");
-        media.className = "shot-media";
-        const loader = document.createElement("div");
-        loader.className = "shot-loader";
-        loader.innerHTML = "<div class=\"shot-spinner\" aria-hidden=\"true\"></div><span class=\"shot-wait\"></span>";
-        const img = document.createElement("img");
-        img.className = "shot-thumb";
-        img.alt = item.n || imageId;
-        img.loading = "lazy";
-        media.appendChild(loader);
-        media.appendChild(img);
-        bindImageLoader(img, media, item.p);
-        const meta = document.createElement("div");
-        meta.className = "shot-meta";
-        const name = document.createElement("div");
-        name.className = "shot-name";
-        name.textContent = item.n || imageId;
-        meta.appendChild(name);
-        if (!opts || !opts.hideUser) {
-          const user = document.createElement("div");
-          user.className = "shot-user";
-          user.textContent = "@" + (item.u || "");
-          meta.appendChild(user);
-        }
-        card.appendChild(media);
-        card.appendChild(meta);
-        card.addEventListener("click", function () {
-          location.href = "?id=" + encodeURIComponent(imageId);
-        });
-        card.addEventListener("contextmenu", async function (e) {
-          e.preventDefault();
-          try {
-            await navigator.clipboard.writeText(rawFileUrl(item.p));
-            setStatus("Picture link copied.", "ok");
-          } catch (_) {
-            setStatus("Could not copy link.", "err");
-          }
-        });
-        gallery.appendChild(card);
+    }
+
+    function sortUsersRow(entries) {
+      const byUser = {};
+      entries.forEach(function (row) {
+        const nick = (row.item && row.item.u) || "";
+        if (!byUser[nick]) byUser[nick] = [];
+        byUser[nick].push(row);
       });
+      const nicks = Object.keys(byUser).sort(function (a, b) {
+        const firstA = Math.min.apply(null, byUser[a].map(function (r) { return r.item.t || 0; }));
+        const firstB = Math.min.apply(null, byUser[b].map(function (r) { return r.item.t || 0; }));
+        return firstB - firstA;
+      });
+      const out = [];
+      nicks.forEach(function (nick) {
+        sortByTimeDesc(byUser[nick]).forEach(function (row) {
+          out.push(row);
+        });
+      });
+      return out;
+    }
+
+    function appendShotCard(target, row, opts) {
+      const item = row.item;
+      const imageId = row.id;
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = "shot";
+      card.title = item.n || imageId;
+      const media = document.createElement("div");
+      media.className = "shot-media";
+      const loader = document.createElement("div");
+      loader.className = "shot-loader";
+      loader.innerHTML = "<div class=\"shot-spinner\" aria-hidden=\"true\"></div><span class=\"shot-wait\"></span>";
+      const img = document.createElement("img");
+      img.className = "shot-thumb";
+      img.alt = item.n || imageId;
+      img.loading = "lazy";
+      media.appendChild(loader);
+      media.appendChild(img);
+      bindImageLoader(img, media, item.p);
+      const meta = document.createElement("div");
+      meta.className = "shot-meta";
+      const name = document.createElement("div");
+      name.className = "shot-name";
+      name.textContent = item.n || imageId;
+      meta.appendChild(name);
+      if (!opts || !opts.hideUser) {
+        const user = document.createElement("div");
+        user.className = "shot-user";
+        user.textContent = "@" + (item.u || "");
+        meta.appendChild(user);
+      }
+      card.appendChild(media);
+      card.appendChild(meta);
+      card.addEventListener("click", function () {
+        location.href = "?id=" + encodeURIComponent(imageId);
+      });
+      card.addEventListener("contextmenu", async function (e) {
+        e.preventDefault();
+        try {
+          await navigator.clipboard.writeText(rawFileUrl(item.p));
+          setStatus("Picture link copied.", "ok");
+        } catch (_) {
+          setStatus("Could not copy link.", "err");
+        }
+      });
+      target.appendChild(card);
+    }
+
+    function renderGalleryInto(target, entries, opts) {
+      target.innerHTML = "";
+      entries.forEach(function (row) {
+        appendShotCard(target, row, opts);
+      });
+    }
+
+    function renderGallery(entries, opts) {
+      const sorted = sortByTimeDesc(entries);
+      renderGalleryInto(gallery, sorted, opts);
+      show(galleryStack, false);
+      show(gallery, true);
+      show(galleryWrap, true);
+    }
+
+    function renderBrowseGallery(entries, opts) {
+      const admin = [];
+      const users = [];
+      entries.forEach(function (row) {
+        const nick = String((row.item && row.item.u) || "").toLowerCase();
+        if (nick === ADMIN_NICK) admin.push(row);
+        else users.push(row);
+      });
+      renderGalleryInto(galleryAdmin, sortByTimeDesc(admin), opts);
+      renderGalleryInto(galleryUsers, sortUsersRow(users), opts);
+      show(gallery, false);
+      show(galleryStack, true);
       show(galleryWrap, true);
     }
 
@@ -1691,7 +1815,9 @@
     function paintGallery(opts) {
       const q = searchInput ? searchInput.value : "";
       const entries = filterGalleryEntries(q);
-      renderGallery(entries, opts || { hideUser: !!galleryFilterNick });
+      const options = opts || { hideUser: !!galleryFilterNick };
+      if (!galleryFilterNick) renderBrowseGallery(entries, options);
+      else renderGallery(entries, options);
       if (q) setStatus("Found " + entries.length + " picture(s).", "ok");
       else setStatus("", "");
     }
@@ -1708,7 +1834,7 @@
       });
       galleryCache = entries;
       show(searchBox, !filterNick);
-      paintGallery({ hideUser: !!filterNick });
+      paintGallery({ hideUser: true });
     }
 
     async function showImagePage(imageId) {
@@ -1950,8 +2076,8 @@
         const existing = readSessionRaw();
         if (existing && existing.nick) {
           try {
-            const users = await loadJsonMap(USERS_JSON);
-            if (users.map[existing.nick] && users.map[existing.nick].ok) {
+            const acc = await loadUserIndex(existing.nick);
+            if (acc.map && acc.map.ok && acc.map.s === existing.sub) {
               location.replace("?id=" + encodeURIComponent(existing.nick));
               return;
             }
