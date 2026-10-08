@@ -805,6 +805,54 @@
       color: var(--ink);
     }
 
+    .shell.is-browse .nav-row,
+    .shell.is-browse .stage-kicker,
+    .shell.is-browse #pageTitle,
+    .shell.is-browse .stage-lead,
+    .shell.is-browse #status {
+      display: none !important;
+    }
+
+    .shell.is-browse .stage {
+      max-width: 1100px;
+    }
+
+    .shell.is-browse .search-box {
+      max-width: 640px;
+      margin: 8px auto 22px;
+    }
+
+    .shell.is-browse .search-box input {
+      border-radius: 24px;
+      font-weight: 500;
+      box-shadow: 0 1px 6px rgba(32, 33, 36, 0.12);
+    }
+
+    .shell.is-browse .gallery {
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 8px;
+    }
+
+    .shell.is-browse .shot {
+      padding: 0;
+      border-radius: 0;
+      gap: 0;
+    }
+
+    .shell.is-browse .shot-media {
+      width: 100%;
+      aspect-ratio: 1;
+      border-radius: 2px;
+    }
+
+    .shell.is-browse .shot-meta {
+      display: none;
+    }
+
+    .shell.is-browse #galleryTitle {
+      display: none;
+    }
+
     .search-box input:focus {
       outline: 2px solid #b9ceff;
       border-color: var(--blue);
@@ -958,7 +1006,7 @@
       <div class="list-wrap hidden" id="galleryWrap">
         <h2 id="galleryTitle">Pictures</h2>
         <div class="search-box hidden" id="searchBox">
-          <input id="searchInput" type="search" placeholder="Search by picture name…" autocomplete="off">
+          <input id="searchInput" type="search" placeholder="Search pictures" autocomplete="off">
         </div>
         <div class="gallery" id="gallery"></div>
       </div>
@@ -1785,23 +1833,28 @@
       }
 
       if (routeId === PICTURES_ID) {
+        document.getElementById("app").classList.add("is-browse");
+        document.title = "Pictures · Archive Pictures";
         show(uploadBlock, false);
         show(viewerBlock, false);
         show(authBlock, false);
         show(nickBlock, false);
         show(stepsHelp, false);
-        show(linkBlock, true);
-        linkLabel.textContent = "Gallery link";
-        setShareLink(publicLink(PICTURES_ID));
-        setPageCopy("Gallery", "All pictures", "25×25 shortcuts. Click opens the picture in the owner cabinet. Right-click copies the link.");
+        show(linkBlock, false);
+        show(document.getElementById("navRow"), false);
+        show(pageKicker, false);
+        show(pageTitle, false);
+        show(pageLead, false);
+        setStatus("", "");
         const session = readSessionRaw();
         if (session) {
-          setSignedIn(session, false);
-          show(authBlock, true);
-          document.getElementById("googleBtn").classList.add("hidden");
+          googleUser = session;
+          show(signOutBtn, true);
+          navCabinet.href = "?id=" + encodeURIComponent(session.nick);
+        } else {
+          show(signOutBtn, false);
         }
         await loadAndRenderGallery(null);
-        galleryTitle.textContent = "Picture shortcuts";
         return;
       }
 
