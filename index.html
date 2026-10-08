@@ -947,26 +947,11 @@
         <a class="btn btn-ghost" href="?id=addimages" id="navCabinet">My cabinet</a>
       </div>
 
-      <p class="stage-kicker" id="pageKicker">Workspace</p>
-      <h1 id="pageTitle">Add images</h1>
-      <p class="stage-lead" id="pageLead">Sign in with Google, then choose your nickname.</p>
+      <p class="stage-kicker hidden" id="pageKicker"></p>
+      <h1 id="pageTitle">Register</h1>
+      <p class="stage-lead hidden" id="pageLead"></p>
 
-      <div class="steps hidden" id="stepsHelp">
-        <div class="step">
-          <div class="step-num">1</div>
-          <div>
-            <strong>Choose a nickname</strong>
-            <span>Folder users/nickname will store your pictures.</span>
-          </div>
-        </div>
-        <div class="step">
-          <div class="step-num">2</div>
-          <div>
-            <strong>Sign in with Google</strong>
-            <span>We save the nickname to your account for 24 hours.</span>
-          </div>
-        </div>
-      </div>
+      <div class="steps hidden" id="stepsHelp"></div>
 
       <div class="block" id="linkBlock">
         <p class="block-label" id="linkLabel">Your link</p>
@@ -978,20 +963,18 @@
       </div>
 
       <div class="block" id="nickBlock">
-        <p class="block-label">Your nickname</p>
+        <p class="block-label">Nickname</p>
         <form class="nick-form" id="nickForm">
-          <input id="nickInput" type="text" maxlength="24" autocomplete="username" placeholder="for example: marina" required>
-          <p class="add-hint">Only letters, numbers, dot and dash. This creates folder users/your-nick/</p>
-          <button type="submit" class="btn" id="nickSubmitBtn">Continue with this nickname</button>
+          <input id="nickInput" type="text" maxlength="24" autocomplete="username" placeholder="nickname" required>
+          <button type="submit" class="btn" id="nickSubmitBtn">Register</button>
         </form>
       </div>
 
-      <div class="block auth-box" id="authBlock">
-        <p class="block-label">Google account</p>
-        <div id="googleBtn"></div>
+      <div class="block auth-box hidden" id="authBlock">
+        <div id="googleBtn" class="hidden"></div>
         <div class="user-chip hidden" id="userChip">
           <p class="user-line" id="userLine"><strong id="userName"></strong></p>
-          <p class="folder-line" id="folderLine"></p>
+          <p class="folder-line hidden" id="folderLine"></p>
         </div>
       </div>
 
@@ -1537,12 +1520,12 @@
       googleUser = user;
       if (persist !== false) saveSession(user);
       userName.textContent = "@" + user.nick;
-      folderLine.textContent = "Folder: " + userFolderPath(user.nick) + "/";
-      show(userChip, true);
+      folderLine.textContent = "";
+      show(userChip, false);
+      show(authBlock, false);
       show(signOutBtn, true);
       addImage.classList.remove("is-disabled");
       addZone.classList.add("is-ready");
-      document.getElementById("googleBtn").classList.add("hidden");
       navCabinet.href = "?id=" + encodeURIComponent(user.nick);
     }
 
@@ -1551,10 +1534,10 @@
       pendingGoogle = null;
       localStorage.removeItem(USER_KEY);
       show(userChip, false);
+      show(authBlock, false);
       show(signOutBtn, false);
       addImage.classList.add("is-disabled");
       addZone.classList.remove("is-ready");
-      document.getElementById("googleBtn").classList.remove("hidden");
       navCabinet.href = "?id=" + PAGE_ID;
     }
 
@@ -1672,57 +1655,101 @@
       return true;
     }
 
+    let googleTokenClient = null;
+
+    async function finishGoogleSignIn(user) {
+      setStatus("Checking account…");
+      const existing = await resolveExistingUser(user);
+      if (existing) {
+        setSignedIn(existing);
+        location.href = "?id=" + encodeURIComponent(existing.nick);
+        return;
+      }
+      const nick = sanitizeNick(nickInput.value);
+      if (!nick || nick.length < 3) {
+        pendingGoogle = user;
+        show(nickBlock, true);
+        show(stepsHelp, true);
+        setStatus("Enter a nickname (min 3 characters).", "err");
+        nickInput.focus();
+        return;
+      }
+      setStatus("Creating cabinet…");
+      const claimed = await claimNickname(user, nick);
+      pendingGoogle = null;
+      setSignedIn(claimed);
+      location.href = "?id=" + encodeURIComponent(claimed.nick);
+    }
+
     async function onGoogleCredential(response) {
       try {
         const payload = parseJwt(response.credential);
-        const user = {
+        await finishGoogleSignIn({
           sub: payload.sub,
           email: payload.email || "",
           name: payload.name || ""
-        };
-        setStatus("Checking account…");
-        const existing = await resolveExistingUser(user);
-        if (existing) {
-          setSignedIn(existing);
-          location.href = "?id=" + encodeURIComponent(existing.nick);
-          return;
-        }
-        const nick = sanitizeNick(nickInput.value);
-        if (!nick || nick.length < 3) {
-          pendingGoogle = user;
-          show(nickBlock, true);
-          show(stepsHelp, true);
-          setStatus("Type your nickname first (min 3 characters), then sign in again.", "err");
-          nickInput.focus();
-          return;
-        }
-        setStatus("Creating folder users/" + nick + "/ …");
-        const claimed = await claimNickname(user, nick);
-        pendingGoogle = null;
-        setSignedIn(claimed);
-        location.href = "?id=" + encodeURIComponent(claimed.nick);
+        });
       } catch (err) {
         setStatus("Google sign-in failed: " + (err.message || err), "err");
       }
     }
 
     function initGoogle() {
-      if (!window.google || !google.accounts || !google.accounts.id) {
+      if (!window.google || !google.accounts) {
         setTimeout(initGoogle, 200);
         return;
       }
-      google.accounts.id.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        callback: onGoogleCredential,
-        auto_select: false
-      });
-      google.accounts.id.renderButton(document.getElementById("googleBtn"), {
-        theme: "outline",
-        size: "large",
-        text: "signin_with",
-        shape: "rectangular",
-        width: 360
-      });
+      if (google.accounts.id) {
+        google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: onGoogleCredential,
+          auto_select: false
+        });
+      }
+      if (google.accounts.oauth2 && !googleTokenClient) {
+        googleTokenClient = google.accounts.oauth2.initTokenClient({
+          client_id: GOOGLE_CLIENT_ID,
+          scope: "openid email profile",
+          callback: async function (tokenResponse) {
+            if (tokenResponse.error) {
+              setStatus("Google sign-in cancelled.", "err");
+              return;
+            }
+            try {
+              const res = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+                headers: { Authorization: "Bearer " + tokenResponse.access_token }
+              });
+              const profile = await res.json().catch(function () { return {}; });
+              if (!res.ok || !profile.sub) {
+                throw new Error(profile.error || "Could not read Google account");
+              }
+              await finishGoogleSignIn({
+                sub: profile.sub,
+                email: profile.email || "",
+                name: profile.name || ""
+              });
+            } catch (err) {
+              setStatus("Google sign-in failed: " + (err.message || err), "err");
+            }
+          }
+        });
+      }
+    }
+
+    function startGoogleRegister() {
+      initGoogle();
+      if (googleTokenClient) {
+        setStatus("Open Google…");
+        googleTokenClient.requestAccessToken({ prompt: "select_account" });
+        return;
+      }
+      if (window.google && google.accounts && google.accounts.id) {
+        setStatus("Open Google…");
+        google.accounts.id.prompt();
+        return;
+      }
+      setStatus("Google is still loading. Try again.", "err");
+      setTimeout(startGoogleRegister, 300);
     }
 
     function bindCommon() {
@@ -1767,7 +1794,7 @@
         nickInput.value = nick;
         if (pendingGoogle) {
           try {
-            setStatus("Creating folder users/" + nick + "/ …");
+            setStatus("Creating cabinet…");
             const user = await claimNickname(pendingGoogle, nick);
             pendingGoogle = null;
             setSignedIn(user);
@@ -1777,7 +1804,7 @@
           }
           return;
         }
-        setStatus("Nickname @" + nick + " ready. Now sign in with Google.", "ok");
+        startGoogleRegister();
       });
 
       addImage.addEventListener("click", function (e) {
@@ -1826,15 +1853,12 @@
         show(galleryWrap, false);
         show(searchBox, false);
         show(linkBlock, false);
-        show(stepsHelp, true);
+        show(stepsHelp, false);
         show(nickBlock, true);
-        show(authBlock, true);
-        document.getElementById("googleBtn").classList.remove("hidden");
-        setPageCopy(
-          "Create cabinet",
-          "Choose nickname & sign in",
-          "First type a nickname for your folder, then sign in with Google."
-        );
+        show(authBlock, false);
+        show(pageKicker, false);
+        show(pageLead, false);
+        setPageCopy("", "Register", "");
         const existing = readSessionRaw();
         if (existing && existing.nick) {
           try {
@@ -1847,7 +1871,7 @@
           localStorage.removeItem(USER_KEY);
         }
         initGoogle();
-        setStatus("1) Enter nickname  2) Sign in with Google", "ok");
+        setStatus("", "");
         nickInput.focus();
         return;
       }
