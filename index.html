@@ -964,8 +964,8 @@
 
       <div class="block" id="nickBlock">
         <p class="block-label">Nickname</p>
-        <form class="nick-form" id="nickForm">
-          <input id="nickInput" type="text" maxlength="24" autocomplete="username" placeholder="nickname" required>
+        <form class="nick-form" id="nickForm" novalidate autocomplete="off">
+          <input id="nickInput" type="text" name="nickname" maxlength="24" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="nickname" inputmode="text">
           <button type="submit" class="btn" id="nickSubmitBtn">Register</button>
         </form>
       </div>
@@ -1785,7 +1785,14 @@
 
       nickForm.addEventListener("submit", async function (e) {
         e.preventDefault();
-        const nick = sanitizeNick(nickInput.value);
+        e.stopPropagation();
+        const raw = String(nickInput.value || "").trim();
+        if (!raw) {
+          setStatus("Enter a nickname.", "err");
+          nickInput.focus();
+          return;
+        }
+        const nick = sanitizeNick(raw);
         if (!nick || nick.length < 3) {
           setStatus("Nickname must be at least 3 characters.", "err");
           nickInput.focus();
