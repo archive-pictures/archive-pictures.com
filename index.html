@@ -1333,6 +1333,14 @@
       });
     }
 
+    let imagesMapCache = null;
+    let imagesMapPromise = null;
+
+    function invalidateImagesCache() {
+      imagesMapCache = null;
+      imagesMapPromise = null;
+    }
+
     async function getGitHub(path) {
       const res = await fetch(API_BASE + "/contents?path=" + encodeURIComponent(path));
       if (res.status === 404) return null;
@@ -1351,7 +1359,25 @@
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || ("HTTP " + res.status));
+      invalidateImagesCache();
       return data;
+    }
+
+    async function readSiteJson(path) {
+      const clean = String(path || "").replace(/^\/+/, "");
+      if (!clean) return null;
+      const urls = [
+        location.origin + "/" + clean,
+        "https://raw.githubusercontent.com/archive-pictures/archive-pictures.com/main/" + clean
+      ];
+      for (let i = 0; i < urls.length; i++) {
+        try {
+          const res = await fetch(urls[i], { cache: "no-cache" });
+          if (!res.ok) continue;
+          return await res.json();
+        } catch (_) {}
+      }
+      return null;
     }
 
     async function loadJsonMap(path) {
@@ -1362,6 +1388,14 @@
       try { map = JSON.parse(text) || {}; } catch (_) { map = {}; }
       if (Array.isArray(map) || typeof map !== "object") map = {};
       return { map: map, sha: file.sha || null };
+    }
+
+    async function loadPublicJsonMap(path) {
+      const data = await readSiteJson(path);
+      if (data && typeof data === "object" && !Array.isArray(data)) {
+        return { map: data, sha: null };
+      }
+      return { map: {}, sha: null };
     }
 
     async function saveJsonMap(path, map, sha, message) {
@@ -1381,15 +1415,21 @@
     }
 
     async function loadUserIndex(nick) {
+      const publicMap = await loadPublicJsonMap(userIndexPath(nick));
+      if (publicMap.map && (publicMap.map.s || publicMap.map.ok)) return publicMap;
       return loadJsonMap(userIndexPath(nick));
     }
 
     async function findNickBySub(sub) {
       const nicks = await listUserNicks();
-      for (let i = 0; i < nicks.length; i++) {
-        const nick = nicks[i];
-        const loaded = await loadUserIndex(nick);
-        if (loaded.map && loaded.map.s === sub && loaded.map.ok) return nick;
+      const loaded = await Promise.all(nicks.map(function (nick) {
+        return loadUserIndex(nick).then(function (acc) {
+          return { nick: nick, acc: acc };
+        });
+      }));
+      for (let i = 0; i < loaded.length; i++) {
+        const row = loaded[i];
+        if (row.acc.map && row.acc.map.s === sub && row.acc.map.ok) return row.nick;
       }
       return null;
     }
@@ -1429,43 +1469,69 @@
       return out.slice(0, 8);
     }
 
-    async function loadUserImagesIndex(nick) {
-      const file = await getGitHub(userImagesIndexPath(nick));
-      if (!file || !file.content) {
-        return { index: { files: ["images-1.json"], count: 0 }, sha: null };
-      }
-      const text = base64ToText(String(file.content).replace(/\n/g, ""));
-      let index = {};
-      try { index = JSON.parse(text) || {}; } catch (_) { index = {}; }
+    function normalizeImagesIndex(data) {
+      let index = data && typeof data === "object" ? data : {};
       if (!Array.isArray(index.files) || !index.files.length) index.files = ["images-1.json"];
       if (typeof index.count !== "number") index.count = 0;
-      return { index: index, sha: file.sha || null };
+      return index;
+    }
+
+    async function loadUserImagesIndex(nick, forWrite) {
+      if (forWrite) {
+        const file = await getGitHub(userImagesIndexPath(nick));
+        if (!file || !file.content) {
+          return { index: { files: ["images-1.json"], count: 0 }, sha: null };
+        }
+        const text = base64ToText(String(file.content).replace(/\n/g, ""));
+        let parsed = {};
+        try { parsed = JSON.parse(text) || {}; } catch (_) { parsed = {}; }
+        return { index: normalizeImagesIndex(parsed), sha: file.sha || null };
+      }
+      const data = await readSiteJson(userImagesIndexPath(nick));
+      return { index: normalizeImagesIndex(data || {}), sha: null };
     }
 
     async function loadUserImagesMap(nick) {
-      const { index } = await loadUserImagesIndex(nick);
+      const { index } = await loadUserImagesIndex(nick, false);
+      const paths = index.files.map(function (shardFile) {
+        return shardFile.indexOf("/") >= 0 ? shardFile : userImagesShardPath(nick, shardFile);
+      });
+      const shards = await Promise.all(paths.map(function (path) {
+        return loadPublicJsonMap(path);
+      }));
       const all = {};
-      for (let i = 0; i < index.files.length; i++) {
-        const shardFile = index.files[i];
-        const path = shardFile.indexOf("/") >= 0 ? shardFile : userImagesShardPath(nick, shardFile);
-        const { map } = await loadJsonMap(path);
-        Object.keys(map).forEach(function (key) {
-          all[key] = map[key];
+      shards.forEach(function (shard) {
+        Object.keys(shard.map || {}).forEach(function (key) {
+          all[key] = shard.map[key];
         });
-      }
+      });
       return all;
     }
 
-    async function loadAllImagesMap() {
-      const all = {};
-      const nicks = await listUserNicks();
-      for (let i = 0; i < nicks.length; i++) {
-        const nickMap = await loadUserImagesMap(nicks[i]);
-        Object.keys(nickMap).forEach(function (key) {
-          all[key] = nickMap[key];
+    async function loadAllImagesMap(force) {
+      if (!force && imagesMapCache) return imagesMapCache;
+      if (!force && imagesMapPromise) return imagesMapPromise;
+      imagesMapPromise = (async function () {
+        const all = {};
+        const nicks = await listUserNicks();
+        const maps = await Promise.all(nicks.map(function (nick) {
+          return loadUserImagesMap(nick);
+        }));
+        maps.forEach(function (nickMap) {
+          Object.keys(nickMap).forEach(function (key) {
+            all[key] = nickMap[key];
+          });
         });
+        imagesMapCache = all;
+        imagesMapPromise = null;
+        return all;
+      })();
+      try {
+        return await imagesMapPromise;
+      } catch (err) {
+        imagesMapPromise = null;
+        throw err;
       }
-      return all;
     }
 
     function uniqueImageId(base, used, usersMap) {
@@ -1481,7 +1547,7 @@
     async function saveImageRecord(imageId, record) {
       const nick = record.u;
       if (!nick) throw new Error("Missing user folder");
-      const loaded = await loadUserImagesIndex(nick);
+      const loaded = await loadUserImagesIndex(nick, true);
       let index = loaded.index;
       let indexSha = loaded.sha;
       let shardName = index.files[index.files.length - 1];
@@ -1827,9 +1893,9 @@
       else setStatus("", "");
     }
 
-    async function loadAndRenderGallery(filterNick) {
+    async function loadAndRenderGallery(filterNick, presetMap) {
       galleryFilterNick = filterNick || null;
-      const map = await loadAllImagesMap();
+      const map = presetMap || await loadAllImagesMap();
       const entries = [];
       Object.keys(map).forEach(function (key) {
         const item = map[key];
@@ -1842,8 +1908,8 @@
       paintGallery({ hideUser: true });
     }
 
-    async function showImagePage(imageId) {
-      const map = await loadAllImagesMap();
+    async function showImagePage(imageId, presetMap) {
+      const map = presetMap || await loadAllImagesMap();
       const item = map[imageId];
       if (!item || !item.p) {
         setStatus("Picture not found.", "err");
@@ -2126,7 +2192,7 @@
       const openImg = params.get("img");
       if (openImg && images[openImg] && images[openImg].p) {
         location.replace("?id=" + encodeURIComponent(openImg));
-        return;
+        return { redirect: true };
       }
 
       if (images[routeId] && images[routeId].p) {
@@ -2150,7 +2216,7 @@
         } else {
           show(signOutBtn, false);
         }
-        await showImagePage(routeId);
+        await showImagePage(routeId, images);
         viewerUser.textContent = "";
         return;
       }
@@ -2183,7 +2249,7 @@
         show(signOutBtn, false);
         setStatus("", "");
       }
-      await loadAndRenderGallery(routeId);
+      await loadAndRenderGallery(routeId, images);
       show(searchBox, false);
     }
 
