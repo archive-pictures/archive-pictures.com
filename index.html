@@ -148,12 +148,15 @@
     }
 
     .hero-tag {
-      font-family: Syne, sans-serif;
+      font-family: Outfit, sans-serif;
       font-weight: 800;
       font-size: clamp(1.35rem, 4.5vw, 1.85rem);
       letter-spacing: -0.02em;
+      line-height: 1.45;
+      padding: 0.15em 0;
       color: var(--ink);
       margin-bottom: 10px;
+      overflow: visible;
       animation: rise 0.7s ease 0.1s both;
     }
 
@@ -775,7 +778,8 @@
       pointer-events: none;
     }
 
-    .shot-media.is-loaded .shot-loader {
+    .shot-media.is-loaded .shot-loader,
+    .viewer-media.is-loaded .shot-loader {
       display: none;
     }
 
@@ -1237,6 +1241,7 @@
       let triedRaw = false;
       function markLoaded() {
         media.classList.add("is-loaded");
+        media.removeAttribute("title");
       }
       img.onload = markLoaded;
       img.onerror = function () {
@@ -1245,9 +1250,9 @@
           img.src = rawFileUrl(path);
           return;
         }
-        media.classList.add("is-loaded");
+        markLoaded();
       };
-      img.src = fileUrl(path);
+      img.src = rawFileUrl(path);
       if (img.complete && img.naturalWidth > 0) markLoaded();
     }
 

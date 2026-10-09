@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+
+Disallow: /users/
+
+Sitemap: https://archive-pictures.com/sitemap.xml
